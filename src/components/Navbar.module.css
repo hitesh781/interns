@@ -1,0 +1,112 @@
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  background: rgba(2, 8, 24, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0,240,255,0.1);
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  user-select: none;
+}
+.accent { color: var(--neon); }
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  background: rgba(0,240,255,0.04);
+  border: 1px solid rgba(0,240,255,0.1);
+  border-radius: 10px;
+  padding: 4px;
+}
+.tab {
+  padding: 8px 20px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--text-muted);
+  border: none;
+  background: transparent;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+  font-family: var(--font-body);
+}
+.tab:hover { color: var(--neon); }
+.tab.active {
+  background: rgba(0,240,255,0.1);
+  color: var(--neon);
+  border: 1px solid rgba(0,240,255,0.2);
+  text-shadow: 0 0 12px rgba(0,240,255,0.5);
+}
+
+.right { display: flex; gap: 10px; align-items: center; }
+
+/* User chip */
+.userRow { display: flex; align-items: center; gap: 6px; }
+.userChip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 5px 12px 5px 5px;
+  border: 1px solid rgba(0,240,255,0.15);
+  border-radius: 100px;
+  background: rgba(0,240,255,0.05);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.userChip:hover { border-color: rgba(0,240,255,0.35); background: rgba(0,240,255,0.09); }
+.avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--neon2), var(--neon));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+  font-family: var(--font-display);
+  flex-shrink: 0;
+}
+.userInfo { display: flex; flex-direction: column; }
+.userName { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.2; }
+.userRole { font-size: 10px; color: var(--text-muted); }
+.logoutBtn {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,79,123,0.2);
+  background: transparent;
+  color: rgba(255,79,123,0.6);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.logoutBtn:hover { border-color: rgba(255,79,123,0.5); color: var(--accent); background: rgba(255,79,123,0.08); }
+
+.btnNeon {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--bg-deep);
+  border: none;
+  background: var(--neon);
+  transition: all 0.2s;
+  letter-spacing: 0.03em;
+  box-shadow: 0 0 20px rgba(0,240,255,0.3);
+  font-family: var(--font-body);
+}
+.btnNeon:hover { box-shadow: 0 0 32px rgba(0,240,255,0.55); transform: translateY(-1px); }

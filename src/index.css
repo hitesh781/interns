@@ -1,0 +1,45 @@
+/* ── InternsBridge Global Styles ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-deep:    #020818;
+  --bg-base:    #05112a;
+  --bg-card:    #081630;
+  --bg-hover:   #0d2248;
+  --neon:       #00f0ff;
+  --neon2:      #7b2fff;
+  --accent:     #ff4f7b;
+  --gold:       #ffc14d;
+  --text:       #e2eeff;
+  --text-muted: #6b8cba;
+  --border:     rgba(0,240,255,0.12);
+  --border-mid: rgba(0,240,255,0.25);
+  --glow:       0 0 24px rgba(0,240,255,0.2);
+  --glow-lg:    0 0 60px rgba(0,240,255,0.15);
+  --font-display: 'Orbitron', monospace;
+  --font-body:    'Syne', sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-deep);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: rgba(0,240,255,0.3); border-radius: 3px; }
+
+/* Selection */
+::selection { background: rgba(0,240,255,0.2); color: #fff; }
+
+/* Inputs reset */
+input, select, textarea, button {
+  font-family: var(--font-body);
+  font-size: 14px;
+}
