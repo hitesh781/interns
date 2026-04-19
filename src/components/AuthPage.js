@@ -316,51 +316,64 @@ if (role === "recruiter") {
   return (
     <form className={styles.formInner} onSubmit={handleSubmit}>
       
-      <input
+      <Field
+        label="Full Name"
         type="text"
-        placeholder="Full Name"
+        name="fullName"
+        placeholder="John Doe"
         value={form.fullName}
-        onChange={(e) => set('fullName', e.target.value)}
+        onChange={set}
       />
 
-      <input
+      <Field
+        label="Email Address"
         type="email"
-        placeholder="Email"
+        name="email"
+        placeholder={role === 'student' ? 'student@college.edu' : 'hr@company.com'}
         value={form.email}
-        onChange={(e) => set('email', e.target.value)}
+        onChange={set}
       />
 
-      <input
+      <Field
+        label="Password"
         type="password"
-        placeholder="Password"
+        name="password"
+        placeholder="Create a password (min 6 chars)"
         value={form.password}
-        onChange={(e) => set('password', e.target.value)}
+        onChange={set}
       />
 
-      <input
+      <Field
+        label="Confirm Password"
         type="password"
-        placeholder="Confirm Password"
+        name="confirm"
+        placeholder="Confirm your password"
         value={form.confirm}
-        onChange={(e) => set('confirm', e.target.value)}
+        onChange={set}
       />
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <div className={styles.error}>{error}</div>}
 
-      <label>
+      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1.5rem', cursor: 'pointer' }}>
         <input
           type="checkbox"
           checked={agree}
           onChange={(e) => setAgree(e.target.checked)}
+          style={{ width: '16px', height: '16px', accentColor: 'var(--neon)', cursor: 'pointer' }}
         />
         Accept Terms & Conditions
       </label>
 
-      <button type="submit" disabled={loading}>
+      <button
+        type="submit"
+        className={`${styles.submitBtn} ${loading ? styles.loading : ''}`}
+        disabled={loading}
+      >
         {loading ? "Creating..." : "Create Account"}
       </button>
 
-      <p>
-        Already have an account?{" "}
+      <p className={styles.switchText}>
+        Already have an account?{' '}
         <button type="button" onClick={switchMode}>
           Login
         </button>
