@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
 import styles from './PostJobPage.module.css';
+import { addDoc, collection } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import app from "../firebase";
+
+const db = getFirestore(app);
+const auth = getAuth();
 
 const PLANS = [
   { key: 'basic', label: 'Basic', price: 'Free', desc: '1 listing · 30 days · Standard placement' },
@@ -17,9 +24,43 @@ export default function PostJobPage({ onSubmit }) {
     prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]
   );
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit();
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  const user = auth.currentUser;
+
+  if (!user) {
+    alert("Please login first");
+    return;
+  }
+
+  try {
+    await addDoc(collection(db, "jobs"), {
+      title: e.target[0].value,
+      company: e.target[1].value,
+      type: e.target[2].value,
+      mode: e.target[3].value,
+      location: e.target[4].value,
+      duration: e.target[5].value,
+      salary: e.target[6].value,
+      deadline: e.target[7].value,
+      description: e.target[8].value,
+      skills: e.target[9].value,
+      qualifications: e.target[10].value,
+      perks,
+      plan,
+      postedBy: user.uid,
+      recruiterEmail: user.email,
+      createdAt: new Date()
+    });
+
+    alert("Job posted successfully 🚀");
+
+  } catch (err) {
+    console.error(err);
+    alert("Error posting job");
+  }
+
   };
 
   return (

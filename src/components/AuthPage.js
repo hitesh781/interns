@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
 import styles from './AuthPage.module.css';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+
+import { getFirestore, setDoc, doc, getDoc } from "firebase/firestore";
+import app from "../firebase";
+
+
+const auth = getAuth(app);
+const db = getFirestore(app);
+
 
 // ── Icons ──────────────────────────────────────────────
 const EyeIcon = ({ open }) => open ? (
@@ -39,6 +48,7 @@ function RoleSelector({ role, setRole }) {
     </div>
   );
 }
+
 
 // ── Input Field ─────────────────────────────────────────
 function Field({ label, type = 'text', placeholder, icon, value, onChange, name }) {
@@ -82,14 +92,80 @@ function LoginForm({ role, onSuccess, switchMode }) {
     e.preventDefault();
     setError('');
     setLoading(true);
-    // Simulate API call
-    await new Promise(r => setTimeout(r, 1200));
-    setLoading(false);
-    if (form.email && form.password.length >= 6) {
-      onSuccess({ email: form.email, role });
-    } else {
-      setError('Invalid credentials. Password must be at least 6 characters.');
+
+    // ✅ validation
+    if (!form.email || !form.password) {
+      setError("Please fill all fields");
+      setLoading(false);
+      return;
     }
+
+    try {
+      const res = await signInWithEmailAndPassword(
+  auth,
+  form.email,
+  form.password
+);
+
+// 🔥 FETCH USER DATA FROM FIRESTORE
+const userDoc = await getDoc(doc(db, "users", res.user.uid));
+
+if (!userDoc.exists()) {
+  setError("User data not found.");
+  setLoading(false);
+  return;
+}
+
+const userData = userDoc.data();
+
+// ❌ ROLE MISMATCH CHECK
+if (userData.role !== role) {
+  setError(`You are registered as ${userData.role}`);
+  setLoading(false);
+  return;
+}
+
+// ❌ BLOCK PERSONAL EMAIL FOR RECRUITER
+if (userData.role === "recruiter") {
+  const email = res.user.email.toLowerCase();
+
+  if (
+    email.includes("@gmail.com") ||
+    email.includes("@yahoo.com") ||
+    email.includes("@outlook.com") ||
+    email.includes("@hotmail.com")
+  ) {
+    setError("Recruiters must use company email.");
+    setLoading(false);
+    return;
+  }
+}
+
+// ✅ SUCCESS LOGIN
+onSuccess({
+  email: res.user.email,
+  role: userData.role
+      });
+
+    } catch (err) {
+      console.log(err.code);
+
+      // ✅ proper error messages
+      if (err.code === "auth/user-not-found") {
+        setError("User not found. Please sign up first.");
+      } else if (err.code === "auth/wrong-password") {
+        setError("Incorrect password.");
+      } else if (err.code === "auth/invalid-email") {
+        setError("Invalid email format.");
+      } else {
+        setError("Login failed. Try again.");
+      }
+
+      setLoading(false);
+      return; // 🚨 STOP execution
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -101,13 +177,8 @@ function LoginForm({ role, onSuccess, switchMode }) {
         placeholder={role === 'student' ? 'student@college.edu' : 'hr@company.com'}
         value={form.email}
         onChange={set}
-        icon={
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-            <polyline points="22,6 12,13 2,6"/>
-          </svg>
-        }
       />
+
       <Field
         label="Password"
         type="password"
@@ -115,50 +186,22 @@ function LoginForm({ role, onSuccess, switchMode }) {
         placeholder="Enter your password"
         value={form.password}
         onChange={set}
-        icon={
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-        }
       />
-
-      <div className={styles.forgotRow}>
-        <a href="#forgot" className={styles.forgot} onClick={e => e.preventDefault()}>Forgot password?</a>
-      </div>
 
       {error && <div className={styles.error}>{error}</div>}
 
-      <button type="submit" className={`${styles.submitBtn} ${loading ? styles.loading : ''}`} disabled={loading}>
-        {loading ? (
-          <span className={styles.spinner} />
-        ) : (
-          <>
-            Sign In
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-            </svg>
-          </>
-        )}
+      <button
+        type="submit"
+        className={`${styles.submitBtn} ${loading ? styles.loading : ''}`}
+        disabled={loading}
+      >
+        {loading ? "Loading..." : "Sign In"}
       </button>
-
-      <div className={styles.divider}><span>or continue with</span></div>
-
-      <div className={styles.socialRow}>
-        <button type="button" className={styles.socialBtn}>
-          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          Google
-        </button>
-        <button type="button" className={styles.socialBtn}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#0A66C2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2" fill="#0A66C2"/></svg>
-          LinkedIn
-        </button>
-      </div>
 
       <p className={styles.switchText}>
         Don't have an account?{' '}
-        <button type="button" className={styles.switchLink} onClick={switchMode}>
-          Sign up free →
+        <button type="button" onClick={switchMode}>
+          Sign up
         </button>
       </p>
     </form>
@@ -167,13 +210,21 @@ function LoginForm({ role, onSuccess, switchMode }) {
 
 // ── Signup Form ─────────────────────────────────────────
 function SignupForm({ role, onSuccess, switchMode }) {
-  const isRecruiter = role === 'recruiter';
+
   const [form, setForm] = useState({
-    fullName: '', email: '', password: '', confirm: '',
-    college: '', degree: '', gradYear: '',
-    company: '', jobTitle: '', companySize: '',
+    fullName: '',
+    email: '',
+    password: '',
+    confirm: '',
+    college: '',
+    degree: '',
+    gradYear: '',
+    company: '',
+    jobTitle: '',
+    companySize: '',
     phone: '',
   });
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [agree, setAgree] = useState(false);
@@ -183,138 +234,141 @@ function SignupForm({ role, onSuccess, switchMode }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (form.password !== form.confirm) { setError('Passwords do not match.'); return; }
-    if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    if (!agree) { setError('Please accept the Terms & Privacy Policy.'); return; }
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 1400));
-    setLoading(false);
-    onSuccess({ email: form.email, role, name: form.fullName });
-  };
 
-  const emailIcon = (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-      <polyline points="22,6 12,13 2,6"/>
-    </svg>
-  );
-  const lockIcon = (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-    </svg>
-  );
-  const userIcon = (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-    </svg>
-  );
-  const phoneIcon = (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.8a16 16 0 0 0 6.29 6.29l.95-.94a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-    </svg>
-  );
+    // ✅ validation
+    if (!form.fullName || !form.email || !form.password) {
+      setError("Please fill all required fields");
+      return;
+    }
+
+    if (form.password !== form.confirm) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    if (form.password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+
+    if (!agree) {
+      setError('Please accept Terms & Conditions.');
+      return;
+    }
+
+    setLoading(true);
+    // 🚨 Restrict recruiter email
+if (role === "recruiter") {
+  const email = form.email.toLowerCase();
+
+  if (
+    email.includes("@gmail.com") ||
+    email.includes("@yahoo.com") ||
+    email.includes("@outlook.com") ||
+    email.includes("@hotmail.com")
+  ) {
+    setError("Please use your company email (no personal email allowed).");
+    return;
+  }
+}
+
+    try {
+      // 🔐 Firebase Signup
+      const res = await createUserWithEmailAndPassword(
+        auth,
+        form.email,
+        form.password
+      );
+
+      // 💾 Save user in Firestore
+      await setDoc(doc(db, "users", res.user.uid), {
+        email: form.email,
+        role,
+        name: form.fullName,
+        college: form.college || "",
+        company: form.company || "",
+        phone: form.phone || "",
+        createdAt: new Date()
+      });
+
+      // ✅ Success
+      onSuccess({
+        email: form.email,
+        role,
+        name: form.fullName
+      });
+
+    } catch (err) {
+      console.log(err);
+
+      if (err.code === "auth/email-already-in-use") {
+        setError("Email already registered. Please login.");
+      } else if (err.code === "auth/invalid-email") {
+        setError("Invalid email format.");
+      } else {
+        setError("Signup failed. Try again.");
+      }
+    }
+
+    setLoading(false);
+  };
 
   return (
     <form className={styles.formInner} onSubmit={handleSubmit}>
-      <div className={styles.row2}>
-        <Field label="Full Name *" name="fullName" placeholder="Your full name" value={form.fullName} onChange={set} icon={userIcon} />
-        <Field label="Phone Number" name="phone" placeholder="+91 98765 43210" value={form.phone} onChange={set} icon={phoneIcon} />
-      </div>
+      
+      <input
+        type="text"
+        placeholder="Full Name"
+        value={form.fullName}
+        onChange={(e) => set('fullName', e.target.value)}
+      />
 
-      <Field label="Email Address *" type="email" name="email" placeholder={isRecruiter ? 'hr@company.com' : 'you@college.edu'} value={form.email} onChange={set} icon={emailIcon} />
+      <input
+        type="email"
+        placeholder="Email"
+        value={form.email}
+        onChange={(e) => set('email', e.target.value)}
+      />
 
-      {/* Student-specific fields */}
-      {!isRecruiter && (
-        <div className={styles.row2}>
-          <Field label="College / University *" name="college" placeholder="e.g. IIT Delhi" value={form.college} onChange={set}
-            icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>}
-          />
-          <div className={styles.field}>
-            <label className={styles.label}>Graduation Year *</label>
-            <div className={styles.inputWrap}>
-              <span className={styles.inputIcon}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-              </span>
-              <select className={`${styles.input} ${styles.inputWithIcon} ${styles.select}`} value={form.gradYear} onChange={e => set('gradYear', e.target.value)} required>
-                <option value="">Select year</option>
-                {[2025,2026,2027,2028,2029].map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </div>
-          </div>
-        </div>
-      )}
-      {!isRecruiter && (
-        <div className={styles.field}>
-          <label className={styles.label}>Degree / Programme</label>
-          <div className={styles.inputWrap}>
-            <select className={`${styles.input} ${styles.select}`} value={form.degree} onChange={e => set('degree', e.target.value)}>
-              <option value="">Select degree</option>
-              {['B.Tech / B.E.','M.Tech / M.E.','BCA','MCA','B.Sc','M.Sc','MBA','BBA','B.Com','B.Des','Other'].map(d => <option key={d}>{d}</option>)}
-            </select>
-          </div>
-        </div>
-      )}
+      <input
+        type="password"
+        placeholder="Password"
+        value={form.password}
+        onChange={(e) => set('password', e.target.value)}
+      />
 
-      {/* Recruiter-specific fields */}
-      {isRecruiter && (
-        <div className={styles.row2}>
-          <Field label="Company Name *" name="company" placeholder="e.g. Acme Innovations" value={form.company} onChange={set}
-            icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>}
-          />
-          <Field label="Your Job Title *" name="jobTitle" placeholder="e.g. HR Manager" value={form.jobTitle} onChange={set}
-            icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
-          />
-        </div>
-      )}
-      {isRecruiter && (
-        <div className={styles.field}>
-          <label className={styles.label}>Company Size</label>
-          <div className={styles.inputWrap}>
-            <select className={`${styles.input} ${styles.select}`} value={form.companySize} onChange={e => set('companySize', e.target.value)}>
-              <option value="">Select size</option>
-              {['1–10','11–50','51–200','201–500','501–1000','1000+'].map(s => <option key={s}>{s} employees</option>)}
-            </select>
-          </div>
-        </div>
-      )}
+      <input
+        type="password"
+        placeholder="Confirm Password"
+        value={form.confirm}
+        onChange={(e) => set('confirm', e.target.value)}
+      />
 
-      <div className={styles.row2}>
-        <Field label="Password *" type="password" name="password" placeholder="Min. 6 characters" value={form.password} onChange={set} icon={lockIcon} />
-        <Field label="Confirm Password *" type="password" name="confirm" placeholder="Re-enter password" value={form.confirm} onChange={set} icon={lockIcon} />
-      </div>
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <label className={styles.agreeRow}>
-        <input type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} className={styles.agreeCheck} />
-        <span className={styles.agreeText}>
-          I agree to the <a href="#terms" className={styles.link} onClick={e => e.preventDefault()}>Terms of Service</a> and <a href="#privacy" className={styles.link} onClick={e => e.preventDefault()}>Privacy Policy</a>
-        </span>
+      <label>
+        <input
+          type="checkbox"
+          checked={agree}
+          onChange={(e) => setAgree(e.target.checked)}
+        />
+        Accept Terms & Conditions
       </label>
 
-      {error && <div className={styles.error}>{error}</div>}
-
-      <button type="submit" className={`${styles.submitBtn} ${loading ? styles.loading : ''}`} disabled={loading}>
-        {loading ? (
-          <span className={styles.spinner} />
-        ) : (
-          <>
-            Create Account
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-            </svg>
-          </>
-        )}
+      <button type="submit" disabled={loading}>
+        {loading ? "Creating..." : "Create Account"}
       </button>
 
-      <p className={styles.switchText}>
-        Already have an account?{' '}
-        <button type="button" className={styles.switchLink} onClick={switchMode}>
-          Sign in →
+      <p>
+        Already have an account?{" "}
+        <button type="button" onClick={switchMode}>
+          Login
         </button>
       </p>
+
     </form>
   );
+
 }
 
 // ── Success Screen ──────────────────────────────────────
@@ -465,3 +519,4 @@ export default function AuthPage({ onAuthSuccess }) {
     </div>
   );
 }
+

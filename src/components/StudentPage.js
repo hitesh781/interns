@@ -1,7 +1,14 @@
-import React, { useState, useMemo } from 'react';
-import { JOBS, FILTERS, CATEGORIES } from '../data';
+import { addDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import app from "../firebase";
+import React, { useState, useMemo, useEffect } from 'react';
 import styles from './StudentPage.module.css';
+import { JOBS, FILTERS, CATEGORIES } from '../data';
 
+const db = getFirestore(app);
+
+const auth = getAuth();
 function JobCard({ job, onApply, onSave, saved }) {
   return (
     <div className={`${styles.card} ${job.featured ? styles.featured : ''}`}>
@@ -45,19 +52,51 @@ function JobCard({ job, onApply, onSave, saved }) {
 }
 
 export default function StudentPage({ onApply }) {
-  const [query, setQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('All');
   const [categories, setCategories] = useState([]);
   const [saved, setSaved] = useState(new Set());
+  const [dbJobs, setDbJobs] = useState([]);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "jobs"));
+        const jobsList = querySnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            title: data.title || 'Untitled',
+            company: data.company || 'Unknown',
+            logo: data.company ? data.company.charAt(0).toUpperCase() : 'C',
+            color: '#1a73e8',
+            type: data.type || 'Internship',
+            mode: data.mode || 'Remote',
+            tags: data.skills ? data.skills.split(',').map(s => s.trim()) : [],
+            stipend: data.salary || 'Unpaid',
+            location: data.location || 'Remote',
+            posted: 'Recently',
+            featured: data.plan === 'pro' || data.plan === 'enterprise',
+            category: 'Technology',
+            desc: data.description || '',
+          };
+        });
+        setDbJobs(jobsList);
+      } catch (err) {
+        console.error("Error fetching jobs from DB:", err);
+      }
+    };
+    fetchJobs();
+  }, []);
 
   const toggleCat = (c) => setCategories(prev =>
     prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]
   );
 
   const results = useMemo(() => {
-    let list = JOBS;
-    if (query) {
-      const q = query.toLowerCase();
+    let list = [...JOBS, ...dbJobs];
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
       list = list.filter(j =>
         j.title.toLowerCase().includes(q) ||
         j.company.toLowerCase().includes(q) ||
@@ -73,13 +112,53 @@ export default function StudentPage({ onApply }) {
       list = list.filter(j => categories.includes(j.category));
     }
     return list;
-  }, [query, filter, categories]);
+  }, [searchQuery, filter, categories, dbJobs]);
 
   const toggleSave = (id) => setSaved(prev => {
     const next = new Set(prev);
     next.has(id) ? next.delete(id) : next.add(id);
     return next;
   });
+  const applyJob = async (job) => {
+  const user = auth.currentUser;
+
+  if (!user) {
+    alert("Please login first");
+    return;
+  }
+
+  try {
+    // 🔥 prevent duplicate
+    const q = query(
+      collection(db, "applications"),
+      where("jobId", "==", job.id),
+      where("studentId", "==", user.uid)
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      alert("You already applied!");
+      return;
+    }
+
+    // 🔥 save application
+    await addDoc(collection(db, "applications"), {
+      jobId: job.id,
+      jobTitle: job.title,
+      company: job.company,
+      studentId: user.uid,
+      studentEmail: user.email,
+      appliedAt: new Date()
+    });
+
+    alert("Applied successfully 🎉");
+
+  } catch (err) {
+    console.error(err);
+    alert("Error applying");
+  }
+};
 
   return (
     <div className={styles.page}>
@@ -116,8 +195,8 @@ export default function StudentPage({ onApply }) {
           <input
             type="text"
             placeholder="Search by role, skill, or company..."
-            value={query}
-            onChange={e => setQuery(e.target.value)}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
             className={styles.searchInput}
           />
         </div>
@@ -198,7 +277,7 @@ export default function StudentPage({ onApply }) {
                   <JobCard
                     key={job.id}
                     job={job}
-                    onApply={onApply}
+                    onApply={applyJob}
                     onSave={toggleSave}
                     saved={saved.has(job.id)}
                   />
