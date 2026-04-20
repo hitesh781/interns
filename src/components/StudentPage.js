@@ -1,5 +1,4 @@
 import { addDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import app from "../firebase";
 import React, { useState, useMemo, useEffect } from 'react';
@@ -7,7 +6,6 @@ import styles from './StudentPage.module.css';
 import { JOBS, FILTERS, CATEGORIES } from '../data';
 
 const db = getFirestore(app);
-const auth = getAuth();
 
 function JobCard({ job, onApply, onSave, saved }) {
   return (

@@ -7,7 +7,6 @@ import app from "../firebase";
 const db = getFirestore(app);
 
 export default function MessagesPage({ user }) {
-  const [messages, setMessages] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
   const [replyText, setReplyText] = useState('');
@@ -29,8 +28,6 @@ export default function MessagesPage({ user }) {
         id: doc.id,
         ...doc.data()
       })).sort((a, b) => a.createdAt?.toMillis() - b.createdAt?.toMillis()); // Sort chronological for chat view
-
-      setMessages(allMsgs);
 
       // Group by conversation
       const grouped = {};
