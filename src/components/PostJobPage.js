@@ -25,45 +25,36 @@ export default function PostJobPage({ onSubmit }) {
   );
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const user = auth.currentUser;
+    const user = auth.currentUser;
 
-  if (!user) {
-    alert("Please login first");
-    return;
-  }
-
-  try {
-    await addDoc(collection(db, "jobs"), {
-      title: e.target[0].value,
-      company: e.target[1].value,
-      type: e.target[2].value,
-      mode: e.target[3].value,
-      location: e.target[4].value,
-      duration: e.target[5].value,
-      salary: e.target[6].value,
-      deadline: e.target[7].value,
-      description: e.target[8].value,
-      skills: e.target[9].value,
-      qualifications: e.target[10].value,
-      perks,
-      plan,
-      postedBy: user.uid,
-      recruiterEmail: user.email,
-      createdAt: new Date()
-    });
-
-    // Removed the alert here because App.js will show a Toast
-    if (onSubmit) {
-      onSubmit();
+    if (!user) {
+      alert("Please login first");
+      return;
     }
 
-  } catch (err) {
-    console.error(err);
-    alert("Error posting job");
-  }
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
 
+    try {
+      await addDoc(collection(db, "jobs"), {
+        ...data,
+        perks,
+        plan,
+        postedBy: user.uid,
+        recruiterEmail: user.email,
+        createdAt: new Date()
+      });
+
+      if (onSubmit) {
+        onSubmit();
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("Error posting job");
+    }
   };
 
   return (
@@ -86,17 +77,17 @@ export default function PostJobPage({ onSubmit }) {
             <div className={styles.row2}>
               <div className={styles.field}>
                 <label className={styles.label}>Job / Internship Title *</label>
-                <input className={styles.input} type="text" placeholder="e.g. Frontend Developer Intern" required />
+                <input name="title" className={styles.input} type="text" placeholder="e.g. Frontend Developer Intern" required />
               </div>
               <div className={styles.field}>
                 <label className={styles.label}>Company Name *</label>
-                <input className={styles.input} type="text" placeholder="e.g. Acme Innovations" required />
+                <input name="company" className={styles.input} type="text" placeholder="e.g. Acme Innovations" required />
               </div>
             </div>
             <div className={styles.row2}>
               <div className={styles.field}>
                 <label className={styles.label}>Opportunity Type *</label>
-                <select className={styles.select}>
+                <select name="type" className={styles.select}>
                   <option>Internship</option>
                   <option>Full-time</option>
                   <option>Part-time</option>
@@ -106,7 +97,7 @@ export default function PostJobPage({ onSubmit }) {
               </div>
               <div className={styles.field}>
                 <label className={styles.label}>Work Mode *</label>
-                <select className={styles.select}>
+                <select name="mode" className={styles.select}>
                   <option>Remote</option>
                   <option>On-site</option>
                   <option>Hybrid</option>
@@ -115,30 +106,52 @@ export default function PostJobPage({ onSubmit }) {
             </div>
           </div>
 
-          {/* LOCATION & DURATION */}
+          {/* ORGANIZATION DETAILS */}
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
               <span className={styles.sectionNum}>02</span>
+              <h2 className={styles.sectionTitle}>Organization Details</h2>
+            </div>
+            <div className={styles.row2}>
+              <div className={styles.field}>
+                <label className={styles.label}>Company Website</label>
+                <input name="companyWebsite" className={styles.input} type="url" placeholder="https://www.example.com" />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Industry</label>
+                <input name="industry" className={styles.input} type="text" placeholder="e.g. EdTech, FinTech, E-commerce" />
+              </div>
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label}>About the Company</label>
+              <textarea name="aboutCompany" className={styles.textarea} style={{ minHeight: '80px' }} placeholder="Briefly describe what your organization does..." />
+            </div>
+          </div>
+
+          {/* LOCATION & DURATION */}
+          <div className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <span className={styles.sectionNum}>03</span>
               <h2 className={styles.sectionTitle}>Location & Compensation</h2>
             </div>
             <div className={styles.row2}>
               <div className={styles.field}>
                 <label className={styles.label}>Location</label>
-                <input className={styles.input} type="text" placeholder="e.g. Bengaluru / Remote" />
+                <input name="location" className={styles.input} type="text" placeholder="e.g. Bengaluru / Remote" />
               </div>
               <div className={styles.field}>
                 <label className={styles.label}>Duration</label>
-                <input className={styles.input} type="text" placeholder="e.g. 3 months / Permanent" />
+                <input name="duration" className={styles.input} type="text" placeholder="e.g. 3 months / Permanent" />
               </div>
             </div>
             <div className={styles.row2}>
               <div className={styles.field}>
                 <label className={styles.label}>Stipend / Salary (₹/month)</label>
-                <input className={styles.input} type="text" placeholder="e.g. 15,000 – 25,000" />
+                <input name="salary" className={styles.input} type="text" placeholder="e.g. 15,000 – 25,000" />
               </div>
               <div className={styles.field}>
                 <label className={styles.label}>Application Deadline</label>
-                <input className={styles.input} type="date" />
+                <input name="deadline" className={styles.input} type="date" />
               </div>
             </div>
           </div>
@@ -146,21 +159,21 @@ export default function PostJobPage({ onSubmit }) {
           {/* DESCRIPTION */}
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
-              <span className={styles.sectionNum}>03</span>
+              <span className={styles.sectionNum}>04</span>
               <h2 className={styles.sectionTitle}>Job Description</h2>
             </div>
             <div className={styles.field}>
               <label className={styles.label}>About the Role *</label>
-              <textarea className={styles.textarea} placeholder="Describe responsibilities, day-to-day work, what the candidate will learn..." required />
+              <textarea name="description" className={styles.textarea} placeholder="Describe responsibilities, day-to-day work, what the candidate will learn..." required />
             </div>
             <div className={styles.row2}>
               <div className={styles.field}>
                 <label className={styles.label}>Required Skills</label>
-                <input className={styles.input} type="text" placeholder="React, Python, Figma (comma-separated)" />
+                <input name="skills" className={styles.input} type="text" placeholder="React, Python, Figma (comma-separated)" />
               </div>
               <div className={styles.field}>
                 <label className={styles.label}>Preferred Qualifications</label>
-                <input className={styles.input} type="text" placeholder="e.g. B.Tech CSE, MBA Finance..." />
+                <input name="qualifications" className={styles.input} type="text" placeholder="e.g. B.Tech CSE, MBA Finance..." />
               </div>
             </div>
           </div>
@@ -168,7 +181,7 @@ export default function PostJobPage({ onSubmit }) {
           {/* PERKS */}
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
-              <span className={styles.sectionNum}>04</span>
+              <span className={styles.sectionNum}>05</span>
               <h2 className={styles.sectionTitle}>Perks & Benefits</h2>
             </div>
             <div className={styles.perksGrid}>
@@ -185,7 +198,7 @@ export default function PostJobPage({ onSubmit }) {
           {/* PLAN */}
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
-              <span className={styles.sectionNum}>05</span>
+              <span className={styles.sectionNum}>06</span>
               <h2 className={styles.sectionTitle}>Choose a Plan</h2>
             </div>
             <div className={styles.plansGrid}>

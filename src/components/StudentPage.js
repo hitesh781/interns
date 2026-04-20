@@ -50,7 +50,7 @@ function JobCard({ job, onApply, onSave, saved }) {
   );
 }
 
-export default function StudentPage({ onApply }) {
+export default function StudentPage({ onApply, user }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('All');
   const [categories, setCategories] = useState([]);
@@ -120,16 +120,20 @@ export default function StudentPage({ onApply }) {
   });
 
   const applyJob = async (job) => {
-    const user = auth.currentUser;
     if (!user) {
-      onApply(job); // Let App.js handle unauthorized state
+      onApply(job); // Let App.js handle unauthorized state (shows "Please login")
+      return;
+    }
+
+    if (user.role === 'recruiter') {
+      onApply(job); // Let App.js handle recruiter blocking
       return;
     }
 
     try {
       const q = query(
         collection(db, "applications"),
-        where("jobId", "==", job.id),
+        where("jobId", "==", job.id.toString()), // Convert job.id to string to avoid mismatch for mock jobs vs DB jobs
         where("studentId", "==", user.uid)
       );
 
@@ -141,11 +145,12 @@ export default function StudentPage({ onApply }) {
       }
 
       await addDoc(collection(db, "applications"), {
-        jobId: job.id,
+        jobId: job.id.toString(),
         jobTitle: job.title,
         company: job.company,
         studentId: user.uid,
         studentEmail: user.email,
+        status: 'pending',
         appliedAt: new Date()
       });
 

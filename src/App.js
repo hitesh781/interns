@@ -9,6 +9,7 @@ import PostJobPage from './components/PostJobPage';
 import ProfilePage from './components/ProfilePage';
 import RecruiterDashboard from './components/RecruiterDashboard';
 import ResumeBuilder from './components/ResumeBuilder';
+import MessagesPage from './components/MessagesPage';
 import Toast from './components/Toast';
 
 export default function App() {
@@ -23,6 +24,10 @@ export default function App() {
     if (!user) {
       setPage('auth');
       showToast('Please login to apply.');
+      return;
+    }
+    if (user.role === 'recruiter') {
+      showToast('Recruiters cannot apply for jobs. Please log in as a student.');
       return;
     }
     showToast(`Applied to ${job.title} at ${job.company}!`);
@@ -49,7 +54,7 @@ export default function App() {
 
       {page === 'home'      && <LandingPage setPage={setPage} />}
       {page === 'auth'      && <AuthPage onAuthSuccess={handleAuthSuccess} />}
-      {page === 'student'   && <StudentPage onApply={handleApply} />}
+      {page === 'student'   && <StudentPage onApply={handleApply} user={user} />}
       {page === 'companies' && <CompaniesPage setPage={setPage} />}
       {page === 'courses'   && <CoursesPage />}
       
@@ -58,6 +63,7 @@ export default function App() {
       {user && page === 'dashboard' && <RecruiterDashboard user={user} />}
       {user && page === 'resume'    && <ResumeBuilder user={user} />}
       {user && page === 'profile'   && <ProfilePage setPage={setPage} user={user} />}
+      {user && page === 'messages'  && <MessagesPage user={user} />}
 
       <Toast message={toast} onClose={clearToast} />
     </>
