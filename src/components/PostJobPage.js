@@ -54,7 +54,10 @@ export default function PostJobPage({ onSubmit }) {
       createdAt: new Date()
     });
 
-    alert("Job posted successfully 🚀");
+    // Removed the alert here because App.js will show a Toast
+    if (onSubmit) {
+      onSubmit();
+    }
 
   } catch (err) {
     console.error(err);

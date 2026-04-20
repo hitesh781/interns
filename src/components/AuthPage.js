@@ -143,9 +143,11 @@ if (userData.role === "recruiter") {
 
 // ✅ SUCCESS LOGIN
 onSuccess({
+  uid: res.user.uid,
   email: res.user.email,
-  role: userData.role
-      });
+  role: userData.role,
+  name: userData.name
+});
 
     } catch (err) {
       console.log(err.code);
@@ -195,12 +197,12 @@ onSuccess({
         className={`${styles.submitBtn} ${loading ? styles.loading : ''}`}
         disabled={loading}
       >
-        {loading ? "Loading..." : "Sign In"}
+        {loading ? <span className={styles.spinner}></span> : "Sign In"}
       </button>
 
       <p className={styles.switchText}>
         Don't have an account?{' '}
-        <button type="button" onClick={switchMode}>
+        <button className={styles.switchLink} type="button" onClick={switchMode}>
           Sign up
         </button>
       </p>
@@ -293,6 +295,7 @@ if (role === "recruiter") {
 
       // ✅ Success
       onSuccess({
+        uid: res.user.uid,
         email: form.email,
         role,
         name: form.fullName
@@ -354,14 +357,16 @@ if (role === "recruiter") {
 
       {error && <div className={styles.error}>{error}</div>}
 
-      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1.5rem', cursor: 'pointer' }}>
+      <label className={styles.agreeRow}>
         <input
           type="checkbox"
+          className={styles.agreeCheck}
           checked={agree}
           onChange={(e) => setAgree(e.target.checked)}
-          style={{ width: '16px', height: '16px', accentColor: 'var(--neon)', cursor: 'pointer' }}
         />
-        Accept Terms & Conditions
+        <span className={styles.agreeText}>
+          I agree to the <span className={styles.link}>Terms & Conditions</span>
+        </span>
       </label>
 
       <button
@@ -369,12 +374,12 @@ if (role === "recruiter") {
         className={`${styles.submitBtn} ${loading ? styles.loading : ''}`}
         disabled={loading}
       >
-        {loading ? "Creating..." : "Create Account"}
+        {loading ? <span className={styles.spinner}></span> : "Create Account"}
       </button>
 
       <p className={styles.switchText}>
         Already have an account?{' '}
-        <button type="button" onClick={switchMode}>
+        <button className={styles.switchLink} type="button" onClick={switchMode}>
           Login
         </button>
       </p>
@@ -388,7 +393,6 @@ if (role === "recruiter") {
 function SuccessScreen({ user, onContinue }) {
   return (
     <div className={styles.successWrap}>
-      <div className={styles.successOrb} />
       <div className={styles.successIcon}>✓</div>
       <h2 className={styles.successTitle}>Welcome aboard!</h2>
       <p className={styles.successSub}>
@@ -397,7 +401,6 @@ function SuccessScreen({ user, onContinue }) {
           : `Welcome, ${user.name || 'recruiter'}! Post your first opportunity and reach thousands of students.`
         }
       </p>
-      <div className={styles.successBadge}>{user.email}</div>
       <button className={styles.continueBtn} onClick={onContinue}>
         {user.role === 'student' ? 'Browse Opportunities' : 'Post a Job'} →
       </button>
@@ -416,7 +419,6 @@ export default function AuthPage({ onAuthSuccess }) {
   if (user) {
     return (
       <div className={styles.page}>
-        <div className={styles.bg}><div className={styles.bgOrb1}/><div className={styles.bgOrb2}/><div className={styles.bgGrid}/></div>
         <SuccessScreen user={user} onContinue={() => onAuthSuccess && onAuthSuccess(user)} />
       </div>
     );
@@ -424,110 +426,39 @@ export default function AuthPage({ onAuthSuccess }) {
 
   return (
     <div className={styles.page}>
-      {/* Animated Background */}
-      <div className={styles.bg}>
-        <div className={styles.bgOrb1}/>
-        <div className={styles.bgOrb2}/>
-        <div className={styles.bgOrb3}/>
-        <div className={styles.bgGrid}/>
-      </div>
-
-      {/* Split Layout */}
-      <div className={styles.split}>
-        {/* LEFT PANEL */}
-        <div className={styles.leftPanel}>
-          <div className={styles.leftContent}>
-            <div className={styles.brandRow}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke="#00f0ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <line x1="4" y1="22" x2="4" y2="15" stroke="#00f0ff" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              <span className={styles.brand}>Interns<span className={styles.brandAccent}>Bridge</span></span>
-            </div>
-
-            <h1 className={styles.leftTitle}>
-              {mode === 'login' ? (
-                <>Your <span className={styles.neon}>career</span><br/>awaits.</>
-              ) : (
-                <>Join the <span className={styles.neon}>future</span><br/>of hiring.</>
-              )}
-            </h1>
-
-            <p className={styles.leftSub}>
-              {role === 'student'
-                ? 'Discover internships & jobs at 1,200+ top companies across India.'
-                : 'Post opportunities and connect with 50,000+ talented students instantly.'}
-            </p>
-
-            <div className={styles.leftStats}>
-              {role === 'student' ? (
-                <>
-                  <div className={styles.lStat}><span className={styles.lNum}>8,400+</span><span className={styles.lLabel}>Active Jobs</span></div>
-                  <div className={styles.lStat}><span className={styles.lNum}>1,200+</span><span className={styles.lLabel}>Companies</span></div>
-                  <div className={styles.lStat}><span className={styles.lNum}>50k+</span><span className={styles.lLabel}>Placed</span></div>
-                </>
-              ) : (
-                <>
-                  <div className={styles.lStat}><span className={styles.lNum}>50k+</span><span className={styles.lLabel}>Students</span></div>
-                  <div className={styles.lStat}><span className={styles.lNum}>48h</span><span className={styles.lLabel}>Avg. Response</span></div>
-                  <div className={styles.lStat}><span className={styles.lNum}>96%</span><span className={styles.lLabel}>Satisfaction</span></div>
-                </>
-              )}
-            </div>
-
-            <div className={styles.testimonial}>
-              <div className={styles.testAvatar}>{role === 'student' ? 'P' : 'R'}</div>
-              <div>
-                <p className={styles.testQuote}>
-                  {role === 'student'
-                    ? '"Got my dream internship at Google within 2 weeks!"'
-                    : '"Hired 12 interns in a month — incredibly efficient."'}
-                </p>
-                <p className={styles.testName}>
-                  {role === 'student' ? 'Priya S., IIT Bombay' : 'Rahul M., HR Lead @ Flipkart'}
-                </p>
-              </div>
-            </div>
-          </div>
+      <div className={styles.formCard}>
+        {/* Header */}
+        <div className={styles.formHeader}>
+          <h2 className={styles.formTitle}>
+            {role === 'student' ? 'Candidate sign up' : 'Employer sign up'}
+          </h2>
+          <p className={styles.formSub}>
+            {mode === 'login' ? 'Welcome back! Please sign in.' : 'Fill in the details below to get started.'}
+          </p>
         </div>
 
-        {/* RIGHT PANEL */}
-        <div className={styles.rightPanel}>
-          <div className={styles.formCard}>
-            {/* Header */}
-            <div className={styles.formHeader}>
-              <h2 className={styles.formTitle}>
-                {mode === 'login' ? 'Sign In' : 'Create Account'}
-              </h2>
-              <p className={styles.formSub}>
-                {mode === 'login' ? 'Welcome back! Please sign in.' : 'Fill in the details below to get started.'}
-              </p>
-            </div>
+        {/* Role Selector */}
+        <RoleSelector role={role} setRole={setRole} />
 
-            {/* Role Selector */}
-            <RoleSelector role={role} setRole={setRole} />
-
-            {/* Mode Toggle */}
-            <div className={styles.modeToggle}>
-              <button
-                type="button"
-                className={`${styles.modeBtn} ${mode === 'login' ? styles.modeActive : ''}`}
-                onClick={() => setMode('login')}
-              >Sign In</button>
-              <button
-                type="button"
-                className={`${styles.modeBtn} ${mode === 'signup' ? styles.modeActive : ''}`}
-                onClick={() => setMode('signup')}
-              >Sign Up</button>
-            </div>
-
-            {/* Form */}
-            {mode === 'login'
-              ? <LoginForm role={role} onSuccess={handleSuccess} switchMode={() => setMode('signup')} />
-              : <SignupForm role={role} onSuccess={handleSuccess} switchMode={() => setMode('login')} />
-            }
-          </div>
+        {/* Mode Toggle */}
+        <div className={styles.modeToggle}>
+          <button
+            type="button"
+            className={`${styles.modeBtn} ${mode === 'login' ? styles.modeActive : ''}`}
+            onClick={() => setMode('login')}
+          >Sign In</button>
+          <button
+            type="button"
+            className={`${styles.modeBtn} ${mode === 'signup' ? styles.modeActive : ''}`}
+            onClick={() => setMode('signup')}
+          >Sign Up</button>
         </div>
+
+        {/* Form */}
+        {mode === 'login'
+          ? <LoginForm role={role} onSuccess={handleSuccess} switchMode={() => setMode('signup')} />
+          : <SignupForm role={role} onSuccess={handleSuccess} switchMode={() => setMode('login')} />
+        }
       </div>
     </div>
   );
