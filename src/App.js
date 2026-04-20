@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import AuthPage from './components/AuthPage';
 import Navbar from './components/Navbar';
 import StudentPage from './components/StudentPage';
@@ -35,7 +36,12 @@ export default function App() {
   }, []);
 
   if (!user) {
-    return <AuthPage onAuthSuccess={handleAuthSuccess} />;
+    return (
+      <>
+        <AuthPage onAuthSuccess={handleAuthSuccess} />
+        <Analytics />
+      </>
+    );
   }
 
   return (
@@ -48,6 +54,7 @@ export default function App() {
       {page === 'profile'   && <ProfilePage setPage={setPage} user={user} />}
 
       <Toast message={toast} onClose={clearToast} />
+      <Analytics />
     </>
   );
 }
