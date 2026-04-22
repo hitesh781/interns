@@ -7,7 +7,7 @@ export default function LandingPage({ setPage }) {
       <header className={styles.hero}>
         <div className={styles.heroContent}>
           <h1 className={styles.title}>Make your dream career a reality</h1>
-          <p className={styles.subtitle}>Trending internships, jobs, and placement-guaranteed courses from top global companies.</p>
+          <p className={styles.subtitle}>Trending internships and jobs from top global companies.</p>
           <div className={styles.searchBox}>
             <input type="text" placeholder="What are you looking for?" />
             <button className={styles.searchBtn} onClick={() => setPage('student')}>Search</button>

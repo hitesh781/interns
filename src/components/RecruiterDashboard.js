@@ -120,6 +120,16 @@ export default function RecruiterDashboard({ user }) {
     job.applications.map(app => ({ ...app, jobTitle: job.title }))
   );
 
+  const filteredApplications = allApplications.filter(app => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const matchesName = app.studentName && app.studentName.toLowerCase().includes(q);
+    const matchesEmail = app.studentEmail && app.studentEmail.toLowerCase().includes(q);
+    const matchesSkills = app.studentSkills && app.studentSkills.some(s => s.toLowerCase().includes(q));
+    const matchesJob = app.jobTitle && app.jobTitle.toLowerCase().includes(q);
+    return matchesName || matchesEmail || matchesSkills || matchesJob;
+  });
+
   const filteredCandidates = MOCK_CANDIDATES.filter(c => 
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.skills.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -180,16 +190,26 @@ export default function RecruiterDashboard({ user }) {
       )}
 
       {activeTab === 'applications' && (
-        allApplications.length === 0 ? (
-          <div className={styles.emptyState}>
-            <h3>No applications received yet.</h3>
-            <p>Applications from students will appear here.</p>
+        <>
+          <div className={styles.searchHeader} style={{ marginBottom: '20px' }}>
+            <input 
+              type="text" 
+              className={styles.searchInput} 
+              placeholder="Filter by applicant name, email, skills, or job title..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-        ) : (
-          <div className={styles.jobsList}>
-            <div className={styles.jobCard}>
-              <div className={styles.appList}>
-                {allApplications.map(app => (
+          {filteredApplications.length === 0 ? (
+            <div className={styles.emptyState}>
+              <h3>No matching applications found.</h3>
+              <p>Try adjusting your search criteria.</p>
+            </div>
+          ) : (
+            <div className={styles.jobsList}>
+              <div className={styles.jobCard}>
+                <div className={styles.appList}>
+                  {filteredApplications.map(app => (
                   <div key={app.id} className={styles.appItem}>
                     <div className={styles.studentInfo}>
                       <div className={styles.avatar}>
@@ -197,10 +217,26 @@ export default function RecruiterDashboard({ user }) {
                       </div>
                       <div className={styles.studentDetails}>
                         <h4>
-                          {app.studentEmail}
+                          {app.studentName || app.studentEmail}
                           <span className={styles.matchScore}>✨ {app.matchScore}% Match</span>
                         </h4>
-                        <p>Applied for: <strong>{app.jobTitle}</strong> • {formatDate(app.appliedAt)}</p>
+                        <p style={{ margin: '4px 0', fontSize: '0.9rem', color: 'var(--text-light)' }}>
+                          {app.studentEmail} • Applied for: <strong>{app.jobTitle}</strong> • {formatDate(app.appliedAt)}
+                        </p>
+                        {(app.studentCollege || app.studentDegree) && (
+                          <p style={{ margin: '4px 0', fontSize: '0.9rem' }}>
+                            🎓 {app.studentDegree} at {app.studentCollege}
+                          </p>
+                        )}
+                        {app.studentSkills && app.studentSkills.length > 0 && (
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                            {app.studentSkills.map((skill, idx) => (
+                              <span key={idx} style={{ background: 'var(--bg)', border: '1px solid var(--border)', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem' }}>
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -234,7 +270,8 @@ export default function RecruiterDashboard({ user }) {
               </div>
             </div>
           </div>
-        )
+        )}
+        </>
       )}
 
       {activeTab === 'search' && (

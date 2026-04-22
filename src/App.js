@@ -4,12 +4,12 @@ import Navbar from './components/Navbar';
 import LandingPage from './components/LandingPage';
 import StudentPage from './components/StudentPage';
 import CompaniesPage from './components/CompaniesPage';
-import CoursesPage from './components/CoursesPage';
 import PostJobPage from './components/PostJobPage';
 import ProfilePage from './components/ProfilePage';
 import RecruiterDashboard from './components/RecruiterDashboard';
 import ResumeBuilder from './components/ResumeBuilder';
 import MessagesPage from './components/MessagesPage';
+import StudentSetupPage from './components/StudentSetupPage';
 import Toast from './components/Toast';
 
 export default function App() {
@@ -40,7 +40,15 @@ export default function App() {
 
   const handleAuthSuccess = useCallback((userData) => {
     setUser(userData);
-    setPage(userData.role === 'recruiter' ? 'post' : 'home');
+    if (userData.role === 'recruiter') {
+      setPage('post');
+    } else {
+      if (!userData.hasResume) {
+        setPage('studentSetup');
+      } else {
+        setPage('home');
+      }
+    }
   }, []);
 
   const handleLogout = useCallback(() => {
@@ -55,8 +63,8 @@ export default function App() {
       {page === 'home'      && <LandingPage setPage={setPage} />}
       {page === 'auth'      && <AuthPage onAuthSuccess={handleAuthSuccess} />}
       {page === 'student'   && <StudentPage onApply={handleApply} user={user} />}
+      {page === 'studentSetup' && <StudentSetupPage user={user} onComplete={(u) => { setUser(u); setPage('student'); }} />}
       {page === 'companies' && <CompaniesPage setPage={setPage} />}
-      {page === 'courses'   && <CoursesPage />}
       
       {/* Protected Routes */}
       {user && page === 'post'      && <PostJobPage onSubmit={handlePostSubmit} />}

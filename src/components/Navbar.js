@@ -8,7 +8,6 @@ const db = getFirestore(app);
 
 const TABS = [
   { key: 'student', label: 'Internships & Jobs' },
-  { key: 'courses', label: 'Courses' },
   { key: 'companies', label: 'Companies' },
   { key: 'messages', label: 'Messages' },
   { key: 'resume', label: 'AI Resume' },

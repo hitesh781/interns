@@ -146,7 +146,11 @@ onSuccess({
   uid: res.user.uid,
   email: res.user.email,
   role: userData.role,
-  name: userData.name
+  name: userData.name,
+  hasResume: userData.hasResume || false,
+  skills: userData.skills || [],
+  college: userData.college || '',
+  degree: userData.degree || ''
 });
 
     } catch (err) {
@@ -290,7 +294,8 @@ if (role === "recruiter") {
         college: form.college || "",
         company: form.company || "",
         phone: form.phone || "",
-        createdAt: new Date()
+        createdAt: new Date(),
+        hasResume: false
       });
 
       // ✅ Success
@@ -298,7 +303,8 @@ if (role === "recruiter") {
         uid: res.user.uid,
         email: form.email,
         role,
-        name: form.fullName
+        name: form.fullName,
+        hasResume: false
       });
 
     } catch (err) {

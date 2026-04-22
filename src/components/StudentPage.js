@@ -128,6 +128,13 @@ export default function StudentPage({ onApply, user }) {
       return;
     }
 
+    if (!user.hasResume) {
+      alert("You need to build your resume before applying!");
+      // We could use a callback to navigate, or just return. 
+      // They can navigate via navbar.
+      return;
+    }
+
     try {
       const q = query(
         collection(db, "applications"),
@@ -148,6 +155,10 @@ export default function StudentPage({ onApply, user }) {
         company: job.company,
         studentId: user.uid,
         studentEmail: user.email,
+        studentName: user.name || '',
+        studentCollege: user.college || '',
+        studentDegree: user.degree || '',
+        studentSkills: user.skills || [],
         status: 'pending',
         appliedAt: new Date()
       });

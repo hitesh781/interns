@@ -138,12 +138,6 @@ export const COMPANIES = [
   { id: 6, name: 'Microsoft', logo: 'M', color: '#00A4EF', bg: '#e5f6fd', industry: 'Technology', location: 'Seattle, Global', openings: 300, size: '200k+', desc: 'Empowering every person and organization to achieve more.' }
 ];
 
-export const COURSES = [
-  { id: 1, title: 'Full Stack Web Development', provider: 'InternsBridge Academy', duration: '8 Weeks', rating: '4.9', price: '$49', img: '💻', badge: 'Placement Guarantee' },
-  { id: 2, title: 'Data Science & Machine Learning', provider: 'InternsBridge Academy', duration: '12 Weeks', rating: '4.8', price: '$79', img: '📊', badge: 'Popular' },
-  { id: 3, title: 'UI/UX Design Masterclass', provider: 'InternsBridge Academy', duration: '6 Weeks', rating: '4.7', price: '$39', img: '🎨', badge: 'New' },
-  { id: 4, title: 'Digital Marketing Bootcamp', provider: 'InternsBridge Academy', duration: '4 Weeks', rating: '4.6', price: '$29', img: '📈', badge: null },
-];
 
 export const FILTERS = ['All', 'Internship', 'Full-time', 'Part-time', 'Remote', 'Fresher OK'];
 export const CATEGORIES = ['Technology', 'Design', 'Data Science', 'Finance', 'Marketing', 'Operations'];
