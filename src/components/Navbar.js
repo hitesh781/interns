@@ -80,12 +80,16 @@ export default function Navbar({ page, setPage, user, onLogout }) {
     <>
       <nav className={styles.nav}>
         <div className={styles.logo} onClick={() => setPage('home')}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
-              stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <line x1="4" y1="22" x2="4" y2="15" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          Interns<span className={styles.accent}>Bridge</span>
+          <div className={styles.internshalaLogo}>
+            <svg width="70" height="45" viewBox="0 0 70 45" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.planeIcon}>
+              <path d="M5 35 Q 15 35, 25 25" stroke="#A0A0A0" strokeWidth="1.5" strokeDasharray="3 3" fill="none" />
+              <path d="M25 25 L65 5 L45 35 L38 27 L33 34 L30 26 Z" fill="#00A5EC" />
+              <path d="M65 5 L38 27 L30 26 Z" fill="#52C4F4" />
+              <path d="M38 27 L33 34 L30 26 Z" fill="#007FB5" />
+            </svg>
+            <span className={styles.logoBlue}>INTERNS</span>
+            <span className={styles.logoGrey}>BRIDGE</span>
+          </div>
         </div>
 
         <div className={styles.tabs}>
