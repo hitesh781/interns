@@ -86,6 +86,10 @@ function LoginForm({ role, onSuccess, switchMode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const [otpStep, setOtpStep] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [generatedOtp, setGeneratedOtp] = useState('');
+
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e) => {
@@ -100,58 +104,72 @@ function LoginForm({ role, onSuccess, switchMode }) {
       return;
     }
 
+    if (role === 'recruiter') {
+      const email = form.email.toLowerCase();
+      if (
+        email.includes("@gmail.com") ||
+        email.includes("@yahoo.com") ||
+        email.includes("@outlook.com") ||
+        email.includes("@hotmail.com")
+      ) {
+        setError("Recruiters must use company email.");
+        setLoading(false);
+        return;
+      }
+
+      if (!otpStep) {
+        // Generate and "send" OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        setGeneratedOtp(otp);
+        setOtpStep(true);
+        setLoading(false);
+        alert(`[Demo Mode] OTP sent to your email!\n\nYour OTP is: ${otp}\n\n(In production, integrate an email service here)`);
+        return;
+      }
+
+      if (otpStep && otpCode !== generatedOtp) {
+        setError("Invalid OTP. Please try again.");
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       const res = await signInWithEmailAndPassword(
-  auth,
-  form.email,
-  form.password
-);
+        auth,
+        form.email,
+        form.password
+      );
 
-// 🔥 FETCH USER DATA FROM FIRESTORE
-const userDoc = await getDoc(doc(db, "users", res.user.uid));
+      // 🔥 FETCH USER DATA FROM FIRESTORE
+      const userDoc = await getDoc(doc(db, "users", res.user.uid));
 
-if (!userDoc.exists()) {
-  setError("User data not found.");
-  setLoading(false);
-  return;
-}
+      if (!userDoc.exists()) {
+        setError("User data not found.");
+        setLoading(false);
+        return;
+      }
 
-const userData = userDoc.data();
+      const userData = userDoc.data();
 
-// ❌ ROLE MISMATCH CHECK
-if (userData.role !== role) {
-  setError(`You are registered as ${userData.role}`);
-  setLoading(false);
-  return;
-}
+      // ❌ ROLE MISMATCH CHECK
+      if (userData.role !== role) {
+        setError(`You are registered as ${userData.role}`);
+        setLoading(false);
+        return;
+      }
 
-// ❌ BLOCK PERSONAL EMAIL FOR RECRUITER
-if (userData.role === "recruiter") {
-  const email = res.user.email.toLowerCase();
-
-  if (
-    email.includes("@gmail.com") ||
-    email.includes("@yahoo.com") ||
-    email.includes("@outlook.com") ||
-    email.includes("@hotmail.com")
-  ) {
-    setError("Recruiters must use company email.");
-    setLoading(false);
-    return;
-  }
-}
-
-// ✅ SUCCESS LOGIN
-onSuccess({
-  uid: res.user.uid,
-  email: res.user.email,
-  role: userData.role,
-  name: userData.name,
-  hasResume: userData.hasResume || false,
-  skills: userData.skills || [],
-  college: userData.college || '',
-  degree: userData.degree || ''
-});
+      // ✅ SUCCESS LOGIN
+      onSuccess({
+        uid: res.user.uid,
+        email: res.user.email,
+        role: userData.role,
+        name: userData.name,
+        hasResume: userData.hasResume || false,
+        skills: userData.skills || [],
+        college: userData.college || '',
+        degree: userData.degree || ''
+      });
 
     } catch (err) {
       console.log(err.code);
@@ -159,20 +177,62 @@ onSuccess({
       // ✅ proper error messages
       if (err.code === "auth/user-not-found") {
         setError("User not found. Please sign up first.");
-      } else if (err.code === "auth/wrong-password") {
-        setError("Incorrect password.");
+      } else if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
+        setError("Incorrect email or password.");
       } else if (err.code === "auth/invalid-email") {
         setError("Invalid email format.");
       } else {
         setError("Login failed. Try again.");
       }
-
+      setOtpStep(false);
+      setOtpCode('');
       setLoading(false);
-      return; // 🚨 STOP execution
+      return;
     }
 
     setLoading(false);
   };
+
+  if (otpStep) {
+    return (
+      <form className={styles.formInner} onSubmit={handleSubmit}>
+        <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+          <h3 style={{ color: 'white', marginBottom: '8px' }}>Email Verification</h3>
+          <p style={{ color: '#aaa', fontSize: '14px' }}>
+            We've sent a 6-digit OTP to <br/><strong style={{ color: '#fff' }}>{form.email}</strong>
+          </p>
+        </div>
+        
+        <Field
+          label="Enter OTP"
+          type="text"
+          name="otp"
+          placeholder="000000"
+          value={otpCode}
+          onChange={(name, val) => setOtpCode(val)}
+        />
+        
+        {error && <div className={styles.error}>{error}</div>}
+
+        <button
+          type="submit"
+          className={`${styles.submitBtn} ${loading ? styles.loading : ''}`}
+          disabled={loading}
+        >
+          {loading ? <span className={styles.spinner}></span> : "Verify & Sign In"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { setOtpStep(false); setOtpCode(''); setError(''); }}
+          className={styles.switchLink}
+          style={{ display: 'block', margin: '20px auto 0' }}
+        >
+          ← Back to Login
+        </button>
+      </form>
+    );
+  }
 
   return (
     <form className={styles.formInner} onSubmit={handleSubmit}>
@@ -235,6 +295,10 @@ function SignupForm({ role, onSuccess, switchMode }) {
   const [error, setError] = useState('');
   const [agree, setAgree] = useState(false);
 
+  const [otpStep, setOtpStep] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [generatedOtp, setGeneratedOtp] = useState('');
+
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e) => {
@@ -263,20 +327,37 @@ function SignupForm({ role, onSuccess, switchMode }) {
     }
 
     setLoading(true);
-    // 🚨 Restrict recruiter email
-if (role === "recruiter") {
-  const email = form.email.toLowerCase();
 
-  if (
-    email.includes("@gmail.com") ||
-    email.includes("@yahoo.com") ||
-    email.includes("@outlook.com") ||
-    email.includes("@hotmail.com")
-  ) {
-    setError("Please use your company email (no personal email allowed).");
-    return;
-  }
-}
+    // 🚨 Restrict recruiter email
+    if (role === "recruiter") {
+      const email = form.email.toLowerCase();
+
+      if (
+        email.includes("@gmail.com") ||
+        email.includes("@yahoo.com") ||
+        email.includes("@outlook.com") ||
+        email.includes("@hotmail.com")
+      ) {
+        setError("Please use your company email (no personal email allowed).");
+        setLoading(false);
+        return;
+      }
+
+      if (!otpStep) {
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        setGeneratedOtp(otp);
+        setOtpStep(true);
+        setLoading(false);
+        alert(`[Demo Mode] OTP sent to your email!\n\nYour OTP is: ${otp}\n\n(In production, integrate an email service here)`);
+        return;
+      }
+
+      if (otpStep && otpCode !== generatedOtp) {
+        setError("Invalid OTP. Please try again.");
+        setLoading(false);
+        return;
+      }
+    }
 
     try {
       // 🔐 Firebase Signup
@@ -317,10 +398,53 @@ if (role === "recruiter") {
       } else {
         setError("Signup failed. Try again.");
       }
+      setOtpStep(false);
+      setOtpCode('');
     }
 
     setLoading(false);
   };
+
+  if (otpStep) {
+    return (
+      <form className={styles.formInner} onSubmit={handleSubmit}>
+        <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+          <h3 style={{ color: 'white', marginBottom: '8px' }}>Email Verification</h3>
+          <p style={{ color: '#aaa', fontSize: '14px' }}>
+            We've sent a 6-digit OTP to <br/><strong style={{ color: '#fff' }}>{form.email}</strong>
+          </p>
+        </div>
+        
+        <Field
+          label="Enter OTP"
+          type="text"
+          name="otp"
+          placeholder="000000"
+          value={otpCode}
+          onChange={(name, val) => setOtpCode(val)}
+        />
+        
+        {error && <div className={styles.error}>{error}</div>}
+
+        <button
+          type="submit"
+          className={`${styles.submitBtn} ${loading ? styles.loading : ''}`}
+          disabled={loading}
+        >
+          {loading ? <span className={styles.spinner}></span> : "Verify & Sign Up"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { setOtpStep(false); setOtpCode(''); setError(''); }}
+          className={styles.switchLink}
+          style={{ display: 'block', margin: '20px auto 0' }}
+        >
+          ← Back to Signup
+        </button>
+      </form>
+    );
+  }
 
   return (
     <form className={styles.formInner} onSubmit={handleSubmit}>
