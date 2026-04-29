@@ -21,7 +21,10 @@ const routes = [
 
 const server = app.listen(PORT, async () => {
   console.log('Starting prerender process...');
-  const browser = await puppeteer.launch({ headless: 'new' });
+  const browser = await puppeteer.launch({ 
+    headless: 'new',
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  });
   
   for (const route of routes) {
     const page = await browser.newPage();
