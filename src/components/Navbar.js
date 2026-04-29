@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './Navbar.module.css';
 import { collection, query, where, onSnapshot, updateDoc, doc, addDoc } from "firebase/firestore";
 import { getFirestore } from "firebase/firestore";
@@ -7,14 +8,16 @@ import app from "../firebase";
 const db = getFirestore(app);
 
 const TABS = [
-  { key: 'student', label: 'Internships & Jobs' },
-  { key: 'companies', label: 'Companies' },
-  { key: 'messages', label: 'Messages' },
-  { key: 'resume', label: 'AI Resume' },
-  { key: 'dashboard', label: 'Dashboard' },
+  { key: 'student', path: '/jobs', label: 'Internships & Jobs' },
+  { key: 'companies', path: '/companies', label: 'Companies' },
+  { key: 'messages', path: '/messages', label: 'Messages' },
+  { key: 'resume', path: '/resume', label: 'AI Resume' },
+  { key: 'dashboard', path: '/dashboard', label: 'Dashboard' },
 ];
 
-export default function Navbar({ page, setPage, user, onLogout }) {
+export default function Navbar({ user, onLogout }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [replyModal, setReplyModal] = useState({ isOpen: false, recipient: null, text: '' });
@@ -79,7 +82,7 @@ export default function Navbar({ page, setPage, user, onLogout }) {
   return (
     <>
       <nav className={styles.nav}>
-        <div className={styles.logo} onClick={() => setPage('home')}>
+        <div className={styles.logo} onClick={() => navigate('/')}>
           <div className={styles.internshalaLogo}>
             <svg width="70" height="45" viewBox="0 0 70 45" fill="none" xmlns="http://www.w3.org/2000/svg" className={styles.planeIcon}>
               <path d="M5 35 Q 15 35, 25 25" stroke="#A0A0A0" strokeWidth="1.5" strokeDasharray="3 3" fill="none" />
@@ -100,8 +103,8 @@ export default function Navbar({ page, setPage, user, onLogout }) {
           }).map(t => (
             <button
               key={t.key}
-              className={`${styles.tab} ${page === t.key ? styles.active : ''}`}
-              onClick={() => setPage(t.key)}
+              className={`${styles.tab} ${location.pathname === t.path ? styles.active : ''}`}
+              onClick={() => navigate(t.path)}
             >
               {t.label}
             </button>
@@ -111,8 +114,8 @@ export default function Navbar({ page, setPage, user, onLogout }) {
         <div className={styles.right}>
           {!user ? (
             <div className={styles.authButtons}>
-              <button className={styles.loginBtn} onClick={() => setPage('auth')}>Login</button>
-              <button className={styles.registerBtn} onClick={() => setPage('auth')}>Register</button>
+              <button className={styles.loginBtn} onClick={() => navigate('/auth')}>Login</button>
+              <button className={styles.registerBtn} onClick={() => navigate('/auth')}>Register</button>
             </div>
           ) : (
             <div className={styles.userRow}>
@@ -172,7 +175,7 @@ export default function Navbar({ page, setPage, user, onLogout }) {
                 )}
               </div>
 
-              <div className={styles.userChip} onClick={() => setPage('profile')}>
+              <div className={styles.userChip} onClick={() => navigate('/profile')}>
                 <div className={styles.avatar}>{initials}</div>
                 <div className={styles.userInfo}>
                   <span className={styles.userName}>{user.name || user.email?.split('@')[0]}</span>
@@ -188,7 +191,7 @@ export default function Navbar({ page, setPage, user, onLogout }) {
                 </svg>
               </button>
               {user?.role === 'recruiter' && (
-                <button className={styles.postBtn} onClick={() => setPage('post')}>
+                <button className={styles.postBtn} onClick={() => navigate('/post-job')}>
                   Post Job
                 </button>
               )}

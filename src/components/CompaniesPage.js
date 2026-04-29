@@ -1,8 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { COMPANIES } from '../data';
 import styles from './CompaniesPage.module.css';
 
-export default function CompaniesPage({ setPage }) {
+export default function CompaniesPage() {
+  const navigate = useNavigate();
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -15,7 +17,7 @@ export default function CompaniesPage({ setPage }) {
 
       <div className={styles.grid}>
         {COMPANIES.map(co => (
-          <div key={co.id} className={styles.card} onClick={() => setPage('student')}>
+          <div key={co.id} className={styles.card} onClick={() => navigate('/jobs')}>
             <div className={styles.cardTop}>
               <div className={styles.logo} style={{ background: co.color + '18', border: `1px solid ${co.color}35`, color: co.color }}>
                 {co.logo}

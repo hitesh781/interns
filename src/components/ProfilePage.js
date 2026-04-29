@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './ProfilePage.module.css';
 
 const ACTIVITY = [
@@ -16,7 +17,8 @@ const RECS = [
   { title: 'Growth Analyst', co: 'Zomato · Delhi NCR', pay: '₹15,000/mo' },
 ];
 
-export default function ProfilePage({ setPage }) {
+export default function ProfilePage() {
+  const navigate = useNavigate();
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -75,7 +77,7 @@ export default function ProfilePage({ setPage }) {
             <h4 className={styles.cardTitle}>Recommended For You</h4>
             <div className={styles.recsGrid}>
               {RECS.map((r, i) => (
-                <div key={i} className={styles.recItem} onClick={() => setPage('student')}>
+                <div key={i} className={styles.recItem} onClick={() => navigate('/jobs')}>
                   <div className={styles.recTitle}>{r.title}</div>
                   <div className={styles.recCo}>{r.co}</div>
                   <div className={styles.recPay}>{r.pay}</div>

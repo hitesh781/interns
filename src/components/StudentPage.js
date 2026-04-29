@@ -2,14 +2,17 @@ import { addDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { getFirestore } from "firebase/firestore";
 import app from "../firebase";
 import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import styles from './StudentPage.module.css';
 import { JOBS, FILTERS, CATEGORIES } from '../data';
 
 const db = getFirestore(app);
 
 function JobCard({ job, onApply, onSave, saved }) {
+  const navigate = useNavigate();
   return (
-    <div className={`${styles.card} ${job.featured ? styles.featured : ''}`}>
+    <div className={`${styles.card} ${job.featured ? styles.featured : ''}`} onClick={() => navigate(`/jobs/${job.id}`)}>
       {job.featured && <span className={styles.featuredBadge}>Promoted</span>}
       <div className={styles.cardTop}>
         <div className={styles.logo} style={{ color: job.color, backgroundColor: `${job.color}15` }}>
@@ -21,7 +24,7 @@ function JobCard({ job, onApply, onSave, saved }) {
         </div>
         <button
           className={`${styles.saveBtn} ${saved ? styles.saved : ''}`}
-          onClick={() => onSave(job.id)}
+          onClick={(e) => { e.stopPropagation(); onSave(job.id); }}
           title={saved ? 'Unsave' : 'Save'}
         >
           {saved ? '♥' : '♡'}
@@ -40,20 +43,32 @@ function JobCard({ job, onApply, onSave, saved }) {
 
       <div className={styles.footer}>
         <span className={styles.posted}>{job.posted}</span>
-        <button className={styles.applyBtn} onClick={() => onApply(job)}>
-          Apply Now
+        <button className={styles.applyBtn} onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${job.id}`); }}>
+          View Details
         </button>
       </div>
     </div>
   );
 }
 
-export default function StudentPage({ onApply, user }) {
+export default function StudentPage({ onApply, user, presetLocation, presetCategory }) {
+  const { locationParam: urlLocation, categoryParam: urlCategory } = useParams();
+  const locationParam = presetLocation || urlLocation;
+  const categoryParam = presetCategory || urlCategory;
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState('All');
   const [categories, setCategories] = useState([]);
   const [saved, setSaved] = useState(new Set());
   const [dbJobs, setDbJobs] = useState([]);
+
+  useEffect(() => {
+    if (locationParam) setSearchQuery(locationParam);
+    if (categoryParam) {
+      const cat = CATEGORIES.find(c => c.toLowerCase() === categoryParam.toLowerCase());
+      if (cat) setCategories([cat]);
+    }
+  }, [locationParam, categoryParam]);
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -170,10 +185,34 @@ export default function StudentPage({ onApply, user }) {
     }
   };
 
+  let pageTitle = "Internships & Jobs | InternsBridge";
+  let pageDesc = "Find your dream job or internship today on InternsBridge.";
+  let pageH1 = "Find your dream job or internship";
+  let introText = null;
+  
+  if (locationParam) {
+    const loc = locationParam.charAt(0).toUpperCase() + locationParam.slice(1);
+    pageTitle = `Internships in ${loc} | InternsBridge`;
+    pageDesc = `Browse top internships and jobs in ${loc}. Apply to top companies today.`;
+    pageH1 = `Internships in ${loc}`;
+    introText = `Explore the latest internships in ${loc} for freshers and students. Apply to the best remote and on-site opportunities in ${loc}.`;
+  } else if (categoryParam) {
+    const cat = categoryParam.charAt(0).toUpperCase() + categoryParam.slice(1);
+    pageTitle = `${cat} Internships & Jobs | InternsBridge`;
+    pageDesc = `Find the best ${cat} internships and jobs. Apply now on InternsBridge.`;
+    pageH1 = `${cat} Internships`;
+    introText = `Explore the latest ${cat} internships for freshers and students. Kickstart your career in ${cat} today.`;
+  }
+
   return (
     <div className={styles.pageContainer}>
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDesc} />
+      </Helmet>
       <div className={styles.searchHeader}>
-        <h1>Find your dream job or internship</h1>
+        <h1>{pageH1}</h1>
+        {introText && <p className={styles.seoIntroText} style={{ maxWidth: '600px', margin: '10px auto', color: '#f0f0f0', fontSize: '1rem' }}>{introText}</p>}
         <div className={styles.searchBox}>
           <input
             type="text"

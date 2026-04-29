@@ -1,7 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './LandingPage.module.css';
 
-export default function LandingPage({ setPage }) {
+export default function LandingPage() {
+  const navigate = useNavigate();
   const [activeChip, setActiveChip] = React.useState('Big brands');
   
   const chips = [
@@ -70,7 +72,7 @@ export default function LandingPage({ setPage }) {
           <p className={styles.subtitle}>Trending internships and jobs from top global companies.</p>
           <div className={styles.searchBox}>
             <input type="text" placeholder="What are you looking for?" />
-            <button className={styles.searchBtn} onClick={() => setPage('student')}>Search</button>
+            <button className={styles.searchBtn} onClick={() => navigate('/jobs')}>Search</button>
           </div>
         </div>
       </header>
@@ -130,7 +132,7 @@ export default function LandingPage({ setPage }) {
               </div>
               <div className={styles.jobCardFooter}>
                 <span className={styles.jobType}>Job</span>
-                <span className={styles.viewDetails} onClick={() => setPage('student')}>View details &gt;</span>
+                <span className={styles.viewDetails} onClick={() => navigate('/jobs')}>View details &gt;</span>
               </div>
             </div>
           ))}
@@ -140,17 +142,17 @@ export default function LandingPage({ setPage }) {
       <section className={styles.trendingSection}>
         <h2>Trending Internships & Jobs</h2>
         <div className={styles.cardGrid}>
-          <div className={styles.placeholderCard} onClick={() => setPage('student')}>
+          <div className={styles.placeholderCard} onClick={() => navigate('/jobs')}>
             <h4>Software Engineering Intern</h4>
             <p>Google • Remote</p>
             <span>View Details &rarr;</span>
           </div>
-          <div className={styles.placeholderCard} onClick={() => setPage('student')}>
+          <div className={styles.placeholderCard} onClick={() => navigate('/jobs')}>
             <h4>Product Designer</h4>
             <p>Stripe • San Francisco</p>
             <span>View Details &rarr;</span>
           </div>
-          <div className={styles.placeholderCard} onClick={() => setPage('student')}>
+          <div className={styles.placeholderCard} onClick={() => navigate('/jobs')}>
             <h4>Data Analyst Intern</h4>
             <p>Spotify • Stockholm</p>
             <span>View Details &rarr;</span>
