@@ -44,6 +44,11 @@ export default function JobDetailsPage({ onApply, user }) {
             location: data.location || 'Remote',
             posted: 'Recently',
             desc: data.description || '',
+            responsibilities: data.responsibilities || [],
+            requiredSkills: data.requiredSkills || [],
+            preferredSkills: data.preferredSkills || [],
+            aboutCompany: data.aboutCompany || '',
+            category: data.category || 'Technology'
           });
         }
       } catch (err) {
@@ -74,7 +79,11 @@ export default function JobDetailsPage({ onApply, user }) {
             "@context": "https://schema.org/",
             "@type": "JobPosting",
             "title": job.title,
-            "description": `<div><p>Job opportunity for <strong>${job.title}</strong> at <strong>${job.company}</strong>.</p><p>${job.desc || 'Join our team for this amazing opportunity.'}</p></div>`,
+            "description": `<div><p>Job opportunity for <strong>${job.title}</strong> at <strong>${job.company}</strong>.</p><p>${job.desc || 'Join our team for this amazing opportunity.'}</p>
+              ${job.responsibilities?.length > 0 ? `<h3>Responsibilities</h3><ul>${job.responsibilities.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
+              ${job.requiredSkills?.length > 0 ? `<h3>Required Skills</h3><ul>${job.requiredSkills.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
+              ${job.aboutCompany ? `<h3>About ${job.company}</h3><p>${job.aboutCompany}</p>` : ''}
+            </div>`,
             "identifier": {
               "@type": "PropertyValue",
               "name": job.company,
@@ -109,6 +118,12 @@ export default function JobDetailsPage({ onApply, user }) {
         </script>
       </Helmet>
 
+      <div className={styles.breadcrumbs}>
+        <span onClick={() => navigate('/jobs')} className={styles.breadcrumbLink}>Jobs</span> &gt;
+        {job.category && <span onClick={() => navigate(`/jobs/category/${job.category.toLowerCase()}`)} className={styles.breadcrumbLink}>{job.category}</span>} {job.category && '>'}
+        {job.location && <span onClick={() => navigate(`/jobs/location/${job.location.split(',')[0].toLowerCase().trim()}`)} className={styles.breadcrumbLink}>{job.location.split(',')[0]}</span>}
+      </div>
+
       <div className={styles.heroSection}>
         <button className={styles.backBtn} onClick={() => navigate(-1)}>← Back</button>
         <div className={styles.header}>
@@ -118,6 +133,7 @@ export default function JobDetailsPage({ onApply, user }) {
           <div className={styles.titleInfo}>
             <h1>{job.title} Internship – {job.location} ({job.company})</h1>
             <h2>{job.company}</h2>
+            <div className={styles.timestamp}>Last updated: April 2026</div>
           </div>
           <div className={styles.actionBox}>
             <button className={styles.applyBtn} onClick={() => onApply(job)}>Apply Now</button>
@@ -133,12 +149,52 @@ export default function JobDetailsPage({ onApply, user }) {
             <p>{job.desc || 'No description provided.'}</p>
           </section>
 
-          <section className={styles.skillsSection}>
-            <h3>Required Skills</h3>
-            <div className={styles.tags}>
-              {job.tags?.map(t => <span key={t} className={styles.tag}>{t}</span>)}
-            </div>
-          </section>
+          {job.responsibilities && job.responsibilities.length > 0 && (
+            <section className={styles.descSection}>
+              <h3>Responsibilities</h3>
+              <ul className={styles.bulletList}>
+                {job.responsibilities.map((req, i) => (
+                  <li key={i}>{req}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {job.requiredSkills && job.requiredSkills.length > 0 ? (
+             <section className={styles.descSection}>
+               <h3>Required Skills & Qualifications</h3>
+               <ul className={styles.bulletList}>
+                 {job.requiredSkills.map((req, i) => (
+                   <li key={i}>{req}</li>
+                 ))}
+               </ul>
+             </section>
+          ) : (
+            <section className={styles.skillsSection}>
+              <h3>Skills Tags</h3>
+              <div className={styles.tags}>
+                {job.tags?.map(t => <span key={t} className={styles.tag}>{t}</span>)}
+              </div>
+            </section>
+          )}
+
+          {job.preferredSkills && job.preferredSkills.length > 0 && (
+            <section className={styles.descSection}>
+              <h3>Preferred Skills</h3>
+              <ul className={styles.bulletList}>
+                {job.preferredSkills.map((req, i) => (
+                  <li key={i}>{req}</li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {job.aboutCompany && (
+            <section className={styles.descSection}>
+              <h3>About {job.company}</h3>
+              <p>{job.aboutCompany}</p>
+            </section>
+          )}
         </div>
 
         <div className={styles.sideContent}>

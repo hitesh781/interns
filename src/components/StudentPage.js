@@ -212,6 +212,7 @@ export default function StudentPage({ onApply, user, presetLocation, presetCateg
       </Helmet>
       <div className={styles.searchHeader}>
         <h1>{pageH1}</h1>
+        {(locationParam || categoryParam) && <div className={styles.lastUpdated}>Last updated: April 2026</div>}
         {introText && <p className={styles.seoIntroText} style={{ maxWidth: '600px', margin: '10px auto', color: '#f0f0f0', fontSize: '1rem' }}>{introText}</p>}
         <div className={styles.searchBox}>
           <input
@@ -283,6 +284,47 @@ export default function StudentPage({ onApply, user, presetLocation, presetCateg
           </div>
         </div>
       </div>
+
+      {(locationParam || categoryParam) && (
+        <div className={styles.seoContentWrapper}>
+          <div className={styles.seoContentSection}>
+            <h2>Why pursue {categoryParam ? `a career in ${categoryParam}` : `internships in ${locationParam}`}?</h2>
+            <p>
+              Finding the right opportunity is crucial for your career growth. {locationParam ? `The job market in ${locationParam} is thriving with tech startups, established enterprises, and remote-first companies looking for top talent.` : `The ${categoryParam} industry is constantly evolving, offering dynamic roles for freshers and experienced professionals alike.`} By applying through InternsBridge, you gain access to curated opportunities that match your skill set.
+            </p>
+            
+            <div className={styles.seoGrid}>
+              <div className={styles.seoCard}>
+                <h3>Top Companies Hiring</h3>
+                <ul>
+                  <li>Google</li>
+                  <li>Microsoft</li>
+                  <li>Spotify</li>
+                  <li>Fast-growing Startups</li>
+                </ul>
+              </div>
+              <div className={styles.seoCard}>
+                <h3>Popular Roles</h3>
+                <ul>
+                  <li>Software Engineering Intern</li>
+                  <li>Data Analyst Intern</li>
+                  <li>Product Design Intern</li>
+                  <li>Marketing Associate</li>
+                </ul>
+              </div>
+              <div className={styles.seoCard}>
+                <h3>Tips for Success</h3>
+                <ul>
+                  <li>Tailor your resume for each application.</li>
+                  <li>Highlight personal projects and portfolios.</li>
+                  <li>Prepare for behavioral and technical interviews.</li>
+                  <li>Apply early and follow up!</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
