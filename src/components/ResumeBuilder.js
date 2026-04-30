@@ -1,13 +1,7 @@
 import React, { useState, useRef } from 'react';
 import styles from './ResumeBuilder.module.css';
 import { useReactToPrint } from 'react-to-print';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Gemini API (User needs to set REACT_APP_GEMINI_API_KEY in .env)
-// We check if it exists to prevent crashes if they haven't set it yet
-const genAI = process.env.REACT_APP_GEMINI_API_KEY 
-  ? new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY)
-  : null;
 
 export default function ResumeBuilder({ user }) {
   const componentRef = useRef();
@@ -38,6 +32,7 @@ export default function ResumeBuilder({ user }) {
   });
 
   const [enhancing, setEnhancing] = useState(null);
+  const [error, setError] = useState(null);
 
   // Handlers for personal info
   const handlePersonal = (field, value) => {
@@ -62,29 +57,43 @@ export default function ResumeBuilder({ user }) {
 
   // AI Enhance Feature
   const enhanceDescription = async (type, id, currentDesc, roleOrTitle) => {
-    if (!genAI) {
-      alert("Please configure REACT_APP_GEMINI_API_KEY in your .env file to use AI features.");
-      return;
-    }
     if (!currentDesc.trim()) {
-      alert("Please write a brief description first so the AI has context.");
+      setError("Please write a brief description first so the AI has context.");
       return;
     }
 
     setEnhancing(id);
+    setError(null);
     try {
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const prompt = `Rewrite the following description for a resume to be more professional, action-oriented, and impactful. Focus on achievements and structure it as 2-3 bullet points. The role/project title is "${roleOrTitle}".\n\nOriginal draft:\n${currentDesc}`;
-      
-      const result = await model.generateContent(prompt);
-      const enhancedText = result.response.text();
-      
-      // Clean up markdown bold markers if any
-      const cleanText = enhancedText.replace(/\*\*/g, '').trim();
-      updateListItem(type, id, 'desc', cleanText);
+      const response = await fetch('/api/enhanceResume', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ currentDesc, roleOrTitle }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to enhance text');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let streamedText = '';
+
+      updateListItem(type, id, 'desc', ''); // clear before typing
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        streamedText += chunk;
+        updateListItem(type, id, 'desc', streamedText);
+      }
     } catch (err) {
       console.error(err);
-      alert("Failed to enhance text using AI. Check console for details.");
+      setError(err.message);
     } finally {
       setEnhancing(null);
     }
@@ -99,6 +108,13 @@ export default function ResumeBuilder({ user }) {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
           Build Your Resume
         </h2>
+
+        {error && (
+          <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: '6px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px', border: '1px solid #fca5a5' }}>
+            <span>⚠️ {error}</span>
+            <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', color: '#b91c1c', cursor: 'pointer', fontWeight: 'bold', padding: '0 5px' }}>✕</button>
+          </div>
+        )}
 
         {/* Personal Details */}
         <div className={styles.sectionBlock}>
