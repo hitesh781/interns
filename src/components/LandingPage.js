@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import styles from './LandingPage.module.css';
 
 export default function LandingPage() {
@@ -66,6 +67,9 @@ export default function LandingPage() {
 
   return (
     <div className={styles.landingContainer}>
+      <Helmet>
+        <link rel="canonical" href="https://internsbridge.com/" />
+      </Helmet>
       <header className={styles.hero}>
         <div className={styles.heroContent}>
           <h1 className={styles.title}>Make your dream career a reality</h1>

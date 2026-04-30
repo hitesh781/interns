@@ -3,6 +3,7 @@ import styles from './AuthPage.module.css';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 
 import { getFirestore, setDoc, doc, getDoc } from "firebase/firestore";
+import { Helmet } from 'react-helmet-async';
 import app from "../firebase";
 
 
@@ -549,6 +550,9 @@ export default function AuthPage({ onAuthSuccess }) {
   if (user) {
     return (
       <div className={styles.page}>
+        <Helmet>
+          <meta name="robots" content="noindex, nofollow" />
+        </Helmet>
         <SuccessScreen user={user} onContinue={() => onAuthSuccess && onAuthSuccess(user)} />
       </div>
     );
@@ -556,6 +560,9 @@ export default function AuthPage({ onAuthSuccess }) {
 
   return (
     <div className={styles.page}>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className={styles.formCard}>
         {/* Header */}
         <div className={styles.formHeader}>
