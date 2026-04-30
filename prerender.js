@@ -21,10 +21,29 @@ const routes = [
 
 const server = app.listen(PORT, async () => {
   console.log('Starting prerender process...');
-  const browser = await puppeteer.launch({ 
-    headless: 'new',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
+  let browser;
+  try {
+    if (process.env.VERCEL) {
+      console.log('Using Sparticuz Chromium for Vercel...');
+      const chromium = require('@sparticuz/chromium');
+      const puppeteerCore = require('puppeteer-core');
+      browser = await puppeteerCore.launch({
+        args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox'],
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
+      });
+    } else {
+      browser = await puppeteer.launch({ 
+        headless: 'new',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to launch browser. Skipping prerendering.', error);
+    server.close();
+    process.exit(0);
+  }
   
   for (const route of routes) {
     const page = await browser.newPage();
