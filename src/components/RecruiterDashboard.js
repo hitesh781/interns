@@ -1,18 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import styles from './RecruiterDashboard.module.css';
-import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc, limit } from "firebase/firestore";
 import { getFirestore } from "firebase/firestore";
 import app from "../firebase";
 
 const db = getFirestore(app);
-
-// Mock candidates for Candidate Search & Filtering
-const MOCK_CANDIDATES = [
-  { id: 1, name: 'Rahul Sharma', title: 'Frontend Developer', location: 'Bengaluru', skills: ['React', 'JavaScript', 'CSS'], matchScore: 95 },
-  { id: 2, name: 'Priya Patel', title: 'Data Analyst', location: 'Remote', skills: ['Python', 'SQL', 'Tableau'], matchScore: 88 },
-  { id: 3, name: 'Amit Kumar', title: 'Backend Engineer', location: 'Pune', skills: ['Node.js', 'MongoDB', 'AWS'], matchScore: 92 },
-  { id: 4, name: 'Neha Gupta', title: 'UI/UX Designer', location: 'Mumbai', skills: ['Figma', 'Prototyping', 'User Research'], matchScore: 85 },
-];
 
 export default function RecruiterDashboard({ user }) {
   const [jobsData, setJobsData] = useState([]);
@@ -20,7 +12,12 @@ export default function RecruiterDashboard({ user }) {
   const [activeTab, setActiveTab] = useState('opportunities');
   const [searchQuery, setSearchQuery] = useState('');
   const [messageModal, setMessageModal] = useState({ isOpen: false, recipient: null, text: '' });
+  
+  // Real candidates search
+  const [candidates, setCandidates] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
+  // Fetch Jobs & Applications
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!user) return;
@@ -61,6 +58,47 @@ export default function RecruiterDashboard({ user }) {
     fetchDashboardData();
   }, [user]);
 
+  // Debounced Candidate Search
+  useEffect(() => {
+    if (activeTab !== 'search') return;
+
+    const searchCandidates = async () => {
+      setIsSearching(true);
+      try {
+        let q;
+        const term = searchQuery.trim();
+        
+        if (term === '') {
+           // Default: Fetch latest students
+           q = query(collection(db, "users"), where("role", "==", "student"), limit(20));
+        } else {
+           // Array-contains query for skills. Note: case sensitive.
+           // e.g. searching "React"
+           // Firebase will prompt to build an index if required for complex queries, but this simple one shouldn't need a composite index unless ordered.
+           q = query(collection(db, "users"), where("role", "==", "student"), where("skills", "array-contains", term), limit(20));
+        }
+        
+        const snap = await getDocs(q);
+        const results = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // As a fallback to improve UX, if array-contains yields 0 results, we might filter locally from a general pool, 
+        // but sticking to instructions: we rely on array-contains.
+        setCandidates(results);
+      } catch (err) {
+        console.error("Error searching candidates:", err);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const handler = setTimeout(() => {
+      searchCandidates();
+    }, 500); // 500ms debounce
+
+    return () => clearTimeout(handler);
+  }, [searchQuery, activeTab]);
+
+
   const updateStatus = async (appId, newStatus) => {
     try {
       const appRef = doc(db, "applications", appId);
@@ -83,13 +121,10 @@ export default function RecruiterDashboard({ user }) {
     if (!messageModal.text.trim()) return;
     
     try {
-      // For real users, we use email. For mock candidates, it might just be the name or mock email.
-      // We assume messageModal.recipient is an email or maps to a user identifier.
-      // We will write the notification to Firestore.
       await import("firebase/firestore").then(({ addDoc, collection }) => {
         addDoc(collection(db, "notifications"), {
-          recipientEmail: messageModal.recipient, // Target student email
-          senderEmail: user.email,               // Recruiter email
+          recipientEmail: messageModal.recipient,
+          senderEmail: user.email,
           message: messageModal.text,
           read: false,
           createdAt: new Date()
@@ -129,11 +164,6 @@ export default function RecruiterDashboard({ user }) {
     const matchesJob = app.jobTitle && app.jobTitle.toLowerCase().includes(q);
     return matchesName || matchesEmail || matchesSkills || matchesJob;
   });
-
-  const filteredCandidates = MOCK_CANDIDATES.filter(c => 
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.skills.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
 
   return (
     <div className={styles.page}>
@@ -280,30 +310,34 @@ export default function RecruiterDashboard({ user }) {
             <input 
               type="text" 
               className={styles.searchInput} 
-              placeholder="Search by skills (e.g. React, Python) or name..." 
+              placeholder="Search by exact skill (e.g. React, Python)..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           
           <div className={styles.candidatesGrid}>
-            {filteredCandidates.length > 0 ? (
-              filteredCandidates.map(candidate => (
+            {isSearching ? (
+              <div className={styles.emptyState} style={{ gridColumn: '1 / -1' }}>
+                <p>Searching database...</p>
+              </div>
+            ) : candidates.length > 0 ? (
+              candidates.map(candidate => (
                 <div key={candidate.id} className={styles.candidateCard}>
                   <div className={styles.candidateTop}>
-                    <div className={styles.avatar}>{candidate.name.charAt(0)}</div>
+                    <div className={styles.avatar}>{candidate.name ? candidate.name.charAt(0).toUpperCase() : 'S'}</div>
                     <div className={styles.candidateInfo}>
-                      <h3>{candidate.name}</h3>
-                      <p>{candidate.title} • {candidate.location}</p>
+                      <h3>{candidate.name || 'Student Candidate'}</h3>
+                      <p>{candidate.degree || 'Student'} • {candidate.college || 'University'}</p>
                     </div>
                   </div>
                   <div className={styles.candidateSkills}>
-                    {candidate.skills.map(skill => (
+                    {candidate.skills && candidate.skills.length > 0 ? candidate.skills.map(skill => (
                       <span key={skill} className={styles.skillChip}>{skill}</span>
-                    ))}
+                    )) : <span style={{fontSize:'12px', color:'#94a3b8'}}>No specific skills listed</span>}
                   </div>
                   <div className={styles.candidateAction}>
-                    <button className={styles.btnMessage} onClick={() => setMessageModal({ isOpen: true, recipient: candidate.name, text: '' })}>
+                    <button className={styles.btnMessage} onClick={() => setMessageModal({ isOpen: true, recipient: candidate.email, text: '' })}>
                       Direct Message
                     </button>
                   </div>
@@ -311,7 +345,11 @@ export default function RecruiterDashboard({ user }) {
               ))
             ) : (
               <div className={styles.emptyState} style={{ gridColumn: '1 / -1' }}>
-                <p>No candidates found matching "{searchQuery}"</p>
+                {searchQuery ? (
+                  <p>No candidates found with the skill "{searchQuery}"</p>
+                ) : (
+                  <p>No candidates available right now.</p>
+                )}
               </div>
             )}
           </div>

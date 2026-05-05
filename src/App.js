@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, Suspense, lazy } from 'react';
-import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
 
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
@@ -20,11 +20,31 @@ const RecruiterDashboard = lazy(() => import('./components/RecruiterDashboard'))
 const ResumeBuilder = lazy(() => import('./components/ResumeBuilder'));
 const MessagesPage = lazy(() => import('./components/MessagesPage'));
 const StudentSetupPage = lazy(() => import('./components/StudentSetupPage'));
+const RecruiterSetupPage = lazy(() => import('./components/RecruiterSetupPage'));
 const JobDetailsPage = lazy(() => import('./components/JobDetailsPage'));
 const NotFoundPage = lazy(() => import('./components/NotFoundPage'));
 
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// Wrapper to enforce setup flows
+function RequireSetup({ user, children }) {
+  const location = useLocation();
+
+  if (!user) {
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  if (user.role === 'student' && !user.hasResume) {
+    return <Navigate to="/setup" replace />;
+  }
+
+  if (user.role === 'recruiter' && !user.setupComplete) {
+    return <Navigate to="/recruiter-setup" replace />;
+  }
+
+  return children;
+}
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -45,9 +65,13 @@ export default function App() {
               role: userData.role,
               name: userData.name,
               hasResume: userData.hasResume || false,
+              setupComplete: userData.setupComplete || false,
               skills: userData.skills || [],
               college: userData.college || '',
-              degree: userData.degree || ''
+              degree: userData.degree || '',
+              organizationName: userData.organizationName || '',
+              designation: userData.designation || '',
+              industry: userData.industry || ''
             });
           } else {
             setUser(null);
@@ -89,7 +113,11 @@ export default function App() {
   const handleAuthSuccess = useCallback((userData) => {
     setUser(userData);
     if (userData.role === 'recruiter') {
-      navigate('/post-job');
+      if (!userData.setupComplete) {
+        navigate('/recruiter-setup');
+      } else {
+        navigate('/dashboard');
+      }
     } else {
       if (!userData.hasResume) {
         navigate('/setup');
@@ -117,23 +145,27 @@ export default function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/auth" element={<AuthPage onAuthSuccess={handleAuthSuccess} />} />
-          <Route path="/jobs" element={<StudentPage onApply={handleApply} user={user} />} />
-          <Route path="/jobs/delhi" element={<StudentPage onApply={handleApply} user={user} presetLocation="delhi" />} />
-          <Route path="/jobs/mumbai" element={<StudentPage onApply={handleApply} user={user} presetLocation="mumbai" />} />
-          <Route path="/jobs/remote" element={<StudentPage onApply={handleApply} user={user} presetLocation="remote" />} />
-          <Route path="/jobs/marketing" element={<StudentPage onApply={handleApply} user={user} presetCategory="marketing" />} />
-          <Route path="/jobs/location/:locationParam" element={<StudentPage onApply={handleApply} user={user} />} />
-          <Route path="/jobs/category/:categoryParam" element={<StudentPage onApply={handleApply} user={user} />} />
-          <Route path="/jobs/:id" element={<JobDetailsPage onApply={handleApply} user={user} />} />
+          
           <Route path="/setup" element={<StudentSetupPage user={user} onComplete={(u) => { setUser(u); navigate('/jobs'); }} />} />
+          <Route path="/recruiter-setup" element={<RecruiterSetupPage user={user} onComplete={(u) => { setUser(u); navigate('/dashboard'); }} />} />
+          
           <Route path="/companies" element={<CompaniesPage />} />
           
-          {/* Protected Routes */}
-          <Route path="/post-job" element={user ? <PostJobPage onSubmit={handlePostSubmit} /> : <Navigate to="/auth" />} />
-          <Route path="/dashboard" element={user ? <RecruiterDashboard user={user} /> : <Navigate to="/auth" />} />
-          <Route path="/resume" element={user ? <ResumeBuilder user={user} /> : <Navigate to="/auth" />} />
-          <Route path="/profile" element={user ? <ProfilePage user={user} /> : <Navigate to="/auth" />} />
-          <Route path="/messages" element={user ? <MessagesPage user={user} /> : <Navigate to="/auth" />} />
+          {/* Protected Routes (Require Onboarding) */}
+          <Route path="/jobs" element={<RequireSetup user={user}><StudentPage onApply={handleApply} user={user} /></RequireSetup>} />
+          <Route path="/jobs/delhi" element={<RequireSetup user={user}><StudentPage onApply={handleApply} user={user} presetLocation="delhi" /></RequireSetup>} />
+          <Route path="/jobs/mumbai" element={<RequireSetup user={user}><StudentPage onApply={handleApply} user={user} presetLocation="mumbai" /></RequireSetup>} />
+          <Route path="/jobs/remote" element={<RequireSetup user={user}><StudentPage onApply={handleApply} user={user} presetLocation="remote" /></RequireSetup>} />
+          <Route path="/jobs/marketing" element={<RequireSetup user={user}><StudentPage onApply={handleApply} user={user} presetCategory="marketing" /></RequireSetup>} />
+          <Route path="/jobs/location/:locationParam" element={<RequireSetup user={user}><StudentPage onApply={handleApply} user={user} /></RequireSetup>} />
+          <Route path="/jobs/category/:categoryParam" element={<RequireSetup user={user}><StudentPage onApply={handleApply} user={user} /></RequireSetup>} />
+          <Route path="/jobs/:id" element={<RequireSetup user={user}><JobDetailsPage onApply={handleApply} user={user} /></RequireSetup>} />
+          
+          <Route path="/post-job" element={<RequireSetup user={user}><PostJobPage onSubmit={handlePostSubmit} /></RequireSetup>} />
+          <Route path="/dashboard" element={<RequireSetup user={user}><RecruiterDashboard user={user} /></RequireSetup>} />
+          <Route path="/resume" element={<RequireSetup user={user}><ResumeBuilder user={user} /></RequireSetup>} />
+          <Route path="/profile" element={<RequireSetup user={user}><ProfilePage user={user} /></RequireSetup>} />
+          <Route path="/messages" element={<RequireSetup user={user}><MessagesPage user={user} /></RequireSetup>} />
 
           {/* Catch-all 404 Route */}
           <Route path="*" element={<NotFoundPage />} />

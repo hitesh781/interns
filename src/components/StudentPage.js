@@ -5,7 +5,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import styles from './StudentPage.module.css';
-import { JOBS, FILTERS, CATEGORIES } from '../data';
+import { FILTERS, CATEGORIES } from '../data';
 
 const db = getFirestore(app);
 
@@ -106,7 +106,7 @@ export default function StudentPage({ onApply, user, presetLocation, presetCateg
   );
 
   const results = useMemo(() => {
-    let list = [...JOBS, ...dbJobs];
+    let list = [...dbJobs];
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       list = list.filter(j =>

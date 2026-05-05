@@ -1,7 +1,19 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import styles from './ResumeBuilder.module.css';
 import { useReactToPrint } from 'react-to-print';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
+import app from '../firebase';
 
+const db = getFirestore(app);
+
+const DEFAULT_RESUME = {
+  personal: { name: '', email: '', phone: '', linkedin: '', github: '' },
+  education: [],
+  experience: [],
+  projects: [],
+  skills: ''
+};
 
 export default function ResumeBuilder({ user }) {
   const componentRef = useRef();
@@ -11,40 +23,81 @@ export default function ResumeBuilder({ user }) {
     documentTitle: 'My_Resume',
   });
 
-  const [resume, setResume] = useState({
-    personal: {
-      name: user?.name || '',
-      email: user?.email || '',
-      phone: '',
-      linkedin: '',
-      github: '',
-    },
-    education: [
-      { id: 1, degree: 'B.Tech in Computer Science', college: 'XYZ University', year: '2020 - 2024', grade: '8.5 CGPA' }
-    ],
-    experience: [
-      { id: 1, role: 'Software Engineer Intern', company: 'Tech Corp', duration: 'May 2023 - Aug 2023', desc: 'Worked on frontend.' }
-    ],
-    projects: [
-      { id: 1, title: 'E-commerce App', tech: 'React, Node.js', desc: 'Built a full-stack e-commerce application.' }
-    ],
-    skills: 'JavaScript, React, Node.js, Python, SQL'
-  });
-
+  const [resume, setResume] = useState(DEFAULT_RESUME);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null); // 'success', 'error', null
   const [enhancing, setEnhancing] = useState(null);
   const [error, setError] = useState(null);
 
+  // Load from Firestore
+  useEffect(() => {
+    const fetchResume = async () => {
+      if (!user) return;
+      try {
+        const docRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.resume) {
+            setResume(data.resume);
+          } else {
+            // Pre-fill basic info if resume doesn't exist yet
+            setResume(prev => ({
+              ...prev,
+              personal: { ...prev.personal, name: data.name || '', email: data.email || '' }
+            }));
+          }
+        }
+      } catch (err) {
+        console.error("Error loading resume:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResume();
+  }, [user]);
+
+  // Save to Firestore
+  const handleSave = async () => {
+    if (!user) return;
+    setIsSaving(true);
+    setSaveStatus(null);
+    try {
+      const docRef = doc(db, 'users', user.uid);
+      await updateDoc(docRef, { resume });
+      setHasUnsavedChanges(false);
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus(null), 3000); // Clear success toast after 3s
+    } catch (err) {
+      console.error("Error saving resume:", err);
+      setSaveStatus('error');
+      setTimeout(() => setSaveStatus(null), 5000);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const markUnsaved = () => {
+    if (!hasUnsavedChanges) setHasUnsavedChanges(true);
+  };
+
   // Handlers for personal info
   const handlePersonal = (field, value) => {
+    markUnsaved();
     setResume(prev => ({ ...prev, personal: { ...prev.personal, [field]: value } }));
   };
 
   // Handlers for list items (edu, exp, proj)
   const addListItem = (type, defaultItem) => {
+    markUnsaved();
     setResume(prev => ({ ...prev, [type]: [...prev[type], { id: Date.now(), ...defaultItem }] }));
   };
 
   const updateListItem = (type, id, field, value) => {
+    markUnsaved();
     setResume(prev => ({
       ...prev,
       [type]: prev[type].map(item => item.id === id ? { ...item, [field]: value } : item)
@@ -52,6 +105,7 @@ export default function ResumeBuilder({ user }) {
   };
 
   const removeListItem = (type, id) => {
+    markUnsaved();
     setResume(prev => ({ ...prev, [type]: prev[type].filter(item => item.id !== id) }));
   };
 
@@ -91,6 +145,7 @@ export default function ResumeBuilder({ user }) {
         streamedText += chunk;
         updateListItem(type, id, 'desc', streamedText);
       }
+      markUnsaved();
     } catch (err) {
       console.error(err);
       setError(err.message);
@@ -99,15 +154,47 @@ export default function ResumeBuilder({ user }) {
     }
   };
 
+  if (loading) {
+    return <div className={styles.page}><h2 style={{ textAlign: 'center', padding: '2rem' }}>Loading your resume...</h2></div>;
+  }
+
   return (
     <div className={styles.page}>
       
+      {/* Toast Notifications */}
+      {saveStatus === 'success' && (
+        <div style={{ position: 'fixed', top: 20, right: 20, background: '#10b981', color: 'white', padding: '12px 24px', borderRadius: '8px', zIndex: 1000, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          ✅ Resume saved successfully!
+        </div>
+      )}
+      {saveStatus === 'error' && (
+        <div style={{ position: 'fixed', top: 20, right: 20, background: '#ef4444', color: 'white', padding: '12px 24px', borderRadius: '8px', zIndex: 1000, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          ❌ Failed to save resume.
+        </div>
+      )}
+
       {/* LEFT: Editor Form */}
       <div className={styles.editor}>
-        <h2 className={styles.sectionTitle}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-          Build Your Resume
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h2 className={styles.sectionTitle} style={{ marginBottom: 0 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Build Your Resume
+          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {hasUnsavedChanges && <span style={{ color: '#f59e0b', fontSize: '0.9rem', fontWeight: 500 }}>● Unsaved changes</span>}
+            <button 
+              onClick={handleSave} 
+              disabled={isSaving || !hasUnsavedChanges}
+              style={{
+                background: isSaving ? '#94a3b8' : (!hasUnsavedChanges ? '#e2e8f0' : 'var(--primary)'),
+                color: (!hasUnsavedChanges && !isSaving) ? '#64748b' : '#fff',
+                border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: isSaving || !hasUnsavedChanges ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {isSaving ? 'Saving...' : 'Save to Profile'}
+            </button>
+          </div>
+        </div>
 
         {error && (
           <div style={{ backgroundColor: '#fee2e2', color: '#b91c1c', padding: '10px 14px', borderRadius: '6px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px', border: '1px solid #fca5a5' }}>
@@ -272,7 +359,7 @@ export default function ResumeBuilder({ user }) {
             <textarea 
               className={styles.textarea} 
               value={resume.skills} 
-              onChange={e => setResume(prev => ({ ...prev, skills: e.target.value }))} 
+              onChange={e => { markUnsaved(); setResume(prev => ({ ...prev, skills: e.target.value })) }} 
               placeholder="e.g. JavaScript, React, Python, Data Analysis (Comma separated)"
             />
           </div>

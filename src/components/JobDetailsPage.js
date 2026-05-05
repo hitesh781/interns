@@ -4,7 +4,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import { getFirestore } from 'firebase/firestore';
 import { Helmet } from 'react-helmet-async';
 import app from '../firebase';
-import { JOBS } from '../data';
 import styles from './JobDetailsPage.module.css';
 
 const db = getFirestore(app);
@@ -19,15 +18,7 @@ export default function JobDetailsPage({ onApply, user }) {
     const fetchJob = async () => {
       setLoading(true);
       try {
-        // First check static jobs (which have numeric IDs in data.js)
-        const staticJob = JOBS.find(j => j.id.toString() === id);
-        if (staticJob) {
-          setJob(staticJob);
-          setLoading(false);
-          return;
-        }
-
-        // Check Firebase
+        // Fetch from Firebase
         const jobDoc = await getDoc(doc(db, 'jobs', id));
         if (jobDoc.exists()) {
           const data = jobDoc.data();
