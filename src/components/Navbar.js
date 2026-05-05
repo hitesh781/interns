@@ -124,6 +124,7 @@ export default function Navbar({ user, onLogout }) {
               <div className={styles.notificationWrapper}>
                 <button 
                   className={styles.bellBtn} 
+                  aria-label="Notifications"
                   onClick={() => setShowNotifications(!showNotifications)}
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -154,7 +155,7 @@ export default function Navbar({ user, onLogout }) {
                           <div key={n.id} className={`${styles.notifItem} ${n.read ? styles.read : ''}`} onClick={() => markAsRead(n.id)}>
                             <div className={styles.notifIcon}>💬</div>
                             <div className={styles.notifContent}>
-                              <p><strong>{n.senderEmail}</strong> sent you a message:</p>
+                               <p><strong>{n.senderEmail}</strong> sent you a message:</p>
                               <p className={styles.notifMessage}>"{n.message}"</p>
                               <button 
                                 className={styles.replyBtn}
@@ -183,7 +184,7 @@ export default function Navbar({ user, onLogout }) {
                 </div>
               </div>
               
-              <button className={styles.logoutBtn} onClick={onLogout} title="Log out">
+              <button className={styles.logoutBtn} onClick={onLogout} title="Log out" aria-label="Log out">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                   <polyline points="16 17 21 12 16 7"/>
