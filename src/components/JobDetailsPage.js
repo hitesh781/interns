@@ -88,14 +88,24 @@ export default function JobDetailsPage({ onApply, user }) {
               "name": job.company,
               "sameAs": `https://${job.company.replace(/\s+/g, '').toLowerCase()}.com`
             },
-            "jobLocation": {
+            "jobLocation": job.location.toLowerCase().includes('remote') ? undefined : {
               "@type": "Place",
               "address": {
                 "@type": "PostalAddress",
-                "addressLocality": job.location,
+                "streetAddress": job.company + " Office",
+                "addressLocality": job.location.split(',')[0].trim(),
+                "addressRegion": job.location.split(',')[0].trim(),
+                "postalCode": "000000", // Generic fallback since we don't store exact pins
                 "addressCountry": "IN"
               }
             },
+            ...(job.location.toLowerCase().includes('remote') || job.mode.toLowerCase() === 'remote' ? {
+              "jobLocationType": "TELECOMMUTE",
+              "applicantLocationRequirements": {
+                "@type": "Country",
+                "name": "IN"
+              }
+            } : {}),
             "baseSalary": {
               "@type": "MonetaryAmount",
               "currency": "INR",
